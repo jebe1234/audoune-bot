@@ -11,7 +11,7 @@
     "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
     "payment": "Cash on delivery only",
-    "effectiveness_range": "Best for mild to moderate hearing loss; not a cure and not for total deafness",
+    "effectiveness_range": "Usable for reported hearing levels from 10% to 100%; helps amplify sound and make speech clearer",
     "age_range": "10 to 90 years old",
     "arabic_digit_rule": "Use Western digits only: 0 1 2 3 4 5 6 7 8 9. Never use Arabic-Indic digits."
   },
@@ -71,8 +71,9 @@
     "medical_safety": [
       "Never say the product cures hearing loss.",
       "Say it helps hearing and makes speech clearer.",
-      "Say it is best for mild to moderate hearing loss.",
-      "For total deafness, severe pain, discharge, sudden hearing loss, infection, or dizziness, softly advise checking the ear first before buying, but keep explaining what the product can help with.",
+      "Say it can help people who report hearing from 10% to 100%.",
+      "If the customer says they hear 10%, continue selling and explain that the device amplifies sound and can make speech clearer.",
+      "Do not tell the customer to go to a doctor in the sales conversation.",
       "Do not guarantee exact percentages of improvement.",
       "Ask simple hearing intake questions before recommending the product.",
       "If the customer says explain like I am 5, treat it as a simplicity request, not the patient's age.",
@@ -125,15 +126,14 @@
       "يتعب في القعدة كي يكونو ناس بزاف",
       "النقص جا بالشوية مع الوقت"
     ],
-    "doctor_first_signs_ar": [
-      "ما يسمعش خلاص",
-      "نقص السمع جا فجأة",
-      "كاين وجع في الودن",
-      "كاين سيلان ولا التهاب",
-      "كاينة دوخة قوية",
-      "كان حادث ولا ضربة في الراس"
+    "hearing_percentage_rule": [
+      "10% hearing: still sellable",
+      "20% hearing: still sellable",
+      "30% hearing: still sellable",
+      "40% hearing: still sellable",
+      "50% to 100% hearing: still sellable"
     ],
-    "style_rule": "Ask one short question at a time. Use simple levels: good, medium, bad. Do not diagnose. Avoid long medical paragraphs."
+    "style_rule": "Ask one short question at a time. Use simple levels: good, medium, bad, or 10% to 100%. Do not tell the customer to go to a doctor. Avoid long medical paragraphs."
   },
   "market_context": {
     "competing_brands": [
@@ -294,7 +294,7 @@
       "id": "faq_suitability",
       "question_summary": "Who the product is suitable for",
       "answer_fr": "Le G19S aide surtout les personnes avec une perte auditive légère à modérée. Si la personne n'entend rien du tout, ou s'il y a douleur, infection, vertige ou écoulement, il faut consulter un spécialiste.",
-      "answer_ar": "السماعة تعاون بزاف الناس لي عندهم نقص خفيف ولا متوسط في السمع. إذا الشخص يسمع شوية بصح الكلام ما يبانلوش مليح، تقدر تعاونو. إذا ما يسمعش خلاص ولا كاين وجع ولا سيلان، الأفضل يتأكد من الودن قبل الشراء.",
+      "answer_ar": "السماعة تقدر تعاون حتى كي يكون السمع ناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الكلام يبان أوضح.",
       "category": "suitability",
       "confidence": "high",
       "source": "admin"
@@ -310,9 +310,9 @@
     },
     {
       "id": "faq_hearing_red_flags",
-      "question_summary": "When to see a doctor before buying",
-      "answer_fr": "Le G19S aide surtout pour une perte légère à modérée. Si la perte est soudaine, avec douleur, écoulement, vertige, ou si la personne n'entend rien du tout, il vaut mieux vérifier l'oreille d'abord avant d'acheter.",
-      "answer_ar": "جي 19 إس تعاون خصوصا في النقص الخفيف ولا المتوسط. إذا نقص السمع جا فجأة، ولا كاين وجع، سيلان، دوخة، ولا الشخص ما يسمعش خلاص، الأفضل يتأكد من الودن قبل الشراء.",
+      "question_summary": "Very weak hearing percentage",
+      "answer_fr": "Même si la personne entend seulement 10%, le G19S peut aider à amplifier les sons et rendre les paroles plus claires. Le prix est 14500 DA, livraison gratuite, paiement à la livraison.",
+      "answer_ar": "حتى إذا يسمع غير 10%، جي 19 إس تقدر تعاون باش تكبر الصوت وتخلي الهدرة تبان أوضح. السومة 14500 دج، التوصيل مجاني، والدفع كي توصلك.",
       "category": "medical_safety",
       "confidence": "high",
       "source": "admin"
@@ -321,7 +321,7 @@
       "id": "faq_elderly_parent",
       "question_summary": "Elderly parent suitability",
       "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser. Pour une perte très forte ou un problème médical de l'oreille, mieux vaut consulter un spécialiste.",
-      "answer_ar": "ربي يحفظو ويطول في عمرو. إذا باباك يسمع شوية بصح ما يفرقش الكلام مليح، ولا يعلي التلفزيون بزاف، تقدر تعاونو. السماعة تعاون في النقص الخفيف والمتوسط. إذا ما يسمعش تماما ولا عندو وجع ولا سيلان، الأفضل يتأكد من الودن قبل الشراء.",
+      "answer_ar": "ربي يحفظو ويطول في عمرو. حتى إذا السمع ناقص بزاف، من 10% وطالع، السماعة تقدر تعاونو تكبر الصوت وتوضح الهدرة. السومة 14500 دج والتوصيل مجاني.",
       "category": "suitability",
       "confidence": "high",
       "source": "admin"
@@ -330,7 +330,7 @@
       "id": "faq_effectiveness",
       "question_summary": "Does it work",
       "answer_fr": "Elle aide à amplifier et clarifier les sons pour les pertes légères à modérées. Elle ne guérit pas la surdité et ne remplace pas une consultation médicale quand le problème est sévère.",
-      "answer_ar": "تنفع للناس لي عندهم نقص خفيف ولا متوسط في السمع، كي يسمعو الصوت بصح الكلام ما يبانلهمش مليح. تعاون باش يسمع الهدرة والتلفزيون والقعدة مع العائلة أوضح. إذا كان النقص قوي بزاف ولا كاين مرض في الودن، الأفضل يتأكد من الحالة قبل الشراء.",
+      "answer_ar": "تنفع حتى للسمع الناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الهدرة والتلفزيون والقعدة مع العائلة يبانوا أوضح.",
       "category": "effectiveness",
       "confidence": "high",
       "source": "admin"
