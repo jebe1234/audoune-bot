@@ -83,7 +83,7 @@ async function getUserProfile(userId) {
     });
     return res.data;
   } catch {
-    return { first_name: 'صديقي', last_name: '' };
+    return { first_name: null, last_name: '' };
   }
 }
 

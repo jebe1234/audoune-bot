@@ -3,7 +3,6 @@ const {
   sendImage,
   sendTypingOn,
   sendTypingOff,
-  sendQuickReplies,
   getUserProfile,
 } = require('./messenger');
 const fs                                      = require('fs');
@@ -189,7 +188,7 @@ async function handleMessage(senderId, message) {
   // ── Fetch user's first name (once) ───────────────────────────────────
   if (!session.firstName) {
     const profile      = await getUserProfile(senderId);
-    session.firstName  = profile.first_name || (session.language === 'fr' ? 'ami(e)' : 'صديقي');
+    session.firstName  = profile.first_name || null;
   }
 
   // ── Update conversation history ──────────────────────────────────────
@@ -270,40 +269,7 @@ async function handleMessage(senderId, message) {
     );
   }
 
-  // ── First message: show quick reply menu ─────────────────────────────
-  if (session.isNew && session.messageCount === 1) {
-    session.isNew = false;
-    await delay(1200);
-    await sendTypingOn(senderId);
-    await delay(600);
-    await sendTypingOff(senderId);
-
-    const lang = session.language;
-    await sendQuickReplies(
-      senderId,
-      lang === 'fr'
-        ? `Comment puis-je vous aider, ${session.firstName}?`
-        : `كيفاش نقدر نعاونك، ${session.firstName}؟`,
-      [
-        {
-          title:   lang === 'fr' ? 'Prix & commande' : 'السعر والطلب',
-          payload: 'PRICE_ORDER',
-        },
-        {
-          title:   lang === 'fr' ? 'Livraison' : 'التوصيل',
-          payload: 'DELIVERY',
-        },
-        {
-          title:   lang === 'fr' ? 'Cas auditif' : 'حالة السمع',
-          payload: 'EFFECTIVENESS',
-        },
-        {
-          title:   lang === 'fr' ? 'Le produit' : 'المنتج',
-          payload: 'PRODUCT',
-        },
-      ]
-    );
-  }
+  session.isNew = false;
 }
 
 // ─── Handle quick reply button clicks (postbacks) ────────────────────────────
