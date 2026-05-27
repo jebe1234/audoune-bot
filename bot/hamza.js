@@ -7,8 +7,11 @@ const {
   getUserProfile,
 } = require('./messenger');
 const axios                                   = require('axios');
+const { execFile }                           = require('child_process');
 const fs                                      = require('fs');
+const os                                      = require('os');
 const path                                    = require('path');
+const ffmpegPath                              = require('ffmpeg-static');
 const { generateResponse, transcribeAudio }   = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
@@ -57,6 +60,69 @@ function hasAudioAttachment(message) {
 
 function getAudioAttachment(message) {
   return (message.attachments || []).find((attachment) => attachment.type === 'audio');
+}
+
+function isGeminiSupportedAudio(mimeType) {
+  return [
+    'audio/wav',
+    'audio/x-wav',
+    'audio/mp3',
+    'audio/mpeg',
+    'audio/aac',
+    'audio/ogg',
+    'audio/flac',
+    'audio/aiff',
+  ].includes(String(mimeType || '').toLowerCase());
+}
+
+function normalizeAudioMimeType(mimeType) {
+  const normalized = String(mimeType || '').toLowerCase();
+  if (normalized === 'audio/x-wav') return 'audio/wav';
+  if (normalized === 'audio/mpeg') return 'audio/mp3';
+  return normalized || 'audio/mp3';
+}
+
+function execFileAsync(command, args) {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, { windowsHide: true }, (error, stdout, stderr) => {
+      if (error) {
+        error.stderr = stderr;
+        reject(error);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
+}
+
+async function convertAudioToMp3(audioBuffer) {
+  if (!ffmpegPath) throw new Error('ffmpeg-static is not available');
+
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const inputPath = path.join(os.tmpdir(), `messenger-audio-${id}`);
+  const outputPath = path.join(os.tmpdir(), `messenger-audio-${id}.mp3`);
+
+  try {
+    fs.writeFileSync(inputPath, audioBuffer);
+    await execFileAsync(ffmpegPath, [
+      '-y',
+      '-i', inputPath,
+      '-vn',
+      '-ac', '1',
+      '-ar', '16000',
+      '-b:a', '64k',
+      outputPath,
+    ]);
+    return fs.readFileSync(outputPath);
+  } finally {
+    for (const filePath of [inputPath, outputPath]) {
+      try {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      } catch (err) {
+        console.warn('Could not remove temp audio file:', err.message);
+      }
+    }
+  }
 }
 
 function getPhoneHandoffMessage(lang) {
@@ -110,12 +176,26 @@ async function transcribeMessengerAudio(message) {
     });
   }
 
-  const mimeType = String(res.headers['content-type'] || 'audio/mpeg').split(';')[0];
+  let audioBuffer = Buffer.from(res.data);
+  let mimeType = String(res.headers['content-type'] || 'audio/mpeg').split(';')[0].toLowerCase();
   if (/json|html|text/i.test(mimeType)) {
     throw new Error(`Messenger audio URL returned ${mimeType}`);
   }
 
-  return transcribeAudio(Buffer.from(res.data), mimeType);
+  if (!isGeminiSupportedAudio(mimeType)) {
+    console.log(`Converting Messenger audio from ${mimeType || 'unknown'} to mp3`);
+    audioBuffer = await convertAudioToMp3(audioBuffer);
+    mimeType = 'audio/mp3';
+  }
+
+  try {
+    return await transcribeAudio(audioBuffer, normalizeAudioMimeType(mimeType));
+  } catch (err) {
+    if (mimeType === 'audio/mp3') throw err;
+    console.log(`Retrying Messenger audio as converted mp3 after Gemini rejected ${mimeType}: ${err.message}`);
+    const converted = await convertAudioToMp3(audioBuffer);
+    return transcribeAudio(converted, 'audio/mp3');
+  }
 }
 
 function isBushraTrigger(text) {
@@ -171,8 +251,8 @@ async function handleMessage(senderId, message) {
     await sendTypingOff(senderId);
 
     if (!text) {
-      const msg = getClarifyMessage(lang, true);
-      await sendText(senderId, msg);
+      const msg = getPhoneHandoffMessage(lang);
+      await sendPhoneHandoff(senderId, lang);
       addToHistory(session, 'user', '[audio]');
       addToHistory(session, 'assistant', msg);
       return;
