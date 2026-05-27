@@ -46,6 +46,13 @@ function isPhotoRequest(text) {
   return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها)/i.test(text);
 }
 
+function isBushraTrigger(text) {
+  const hasBushra = /bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text);
+  const asksWho = /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text);
+  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /انا|أنا|راني|اني|أنايا|ana/i.test(text);
+  return hasBushra && (asksWho || saysIam);
+}
+
 function getProductPhotoUrls() {
   const manifestPath = path.join(__dirname, '../data/G19S.json');
   try {
@@ -101,7 +108,7 @@ async function handleMessage(senderId, message) {
   }
 
   // ── Easter egg: Bushra ───────────────────────────────────────────────
-  if (/bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text) && /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text)) {
+  if (isBushraTrigger(text)) {
     const session = getSession(senderId);
     session.bushraMode = true;
     session.bushraLoveCount = 0;
