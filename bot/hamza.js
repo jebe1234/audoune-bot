@@ -48,6 +48,19 @@ async function handleMessage(senderId, message) {
     return;
   }
 
+  // ── 🥚 Easter egg: Yaseen ────────────────────────────────────────────
+  if (/ياسين|yaseen|yassine|ياسن|jassin/i.test(text) && /من|who|qui|هو|مين|ميش|c'est/i.test(text)) {
+    await sendTypingOn(senderId);
+    await delay(1000);
+    await sendTypingOff(senderId);
+    await sendText(senderId,
+      detectLanguage(text) === 'fr'
+        ? `Yaseen ? 😄 C'est tout simplement le meilleur homme sur terre, ya kho! 🏆👑`
+        : `ياسين؟ 😄 هو أحسن راجل فالدنيا يا خو! 🏆👑`
+    );
+    return;
+  }
+
   const session = getSession(senderId);
   session.messageCount++;
 
