@@ -54,7 +54,7 @@ function isBushraTrigger(text) {
 }
 
 function getProductPhotoUrls() {
-  const manifestPath = path.join(__dirname, '../data/G19S.json');
+  const manifestPath = path.join(__dirname, '../data/products/G19S.json');
   try {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const urls = (manifest.photos || []).map((photo) => photo.url).filter(Boolean);
