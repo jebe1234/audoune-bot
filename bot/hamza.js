@@ -294,7 +294,7 @@ async function handleMessage(senderId, message) {
           payload: 'DELIVERY',
         },
         {
-          title:   lang === 'fr' ? 'Efficacité' : 'الفعالية',
+          title:   lang === 'fr' ? 'Cas auditif' : 'حالة السمع',
           payload: 'EFFECTIVENESS',
         },
         {
@@ -324,8 +324,8 @@ async function handlePostback(senderId, postback) {
       dz: `التوصيل مجاني لكل 58 ولاية. المدة غالبا من 24 حتى 48 ساعة بعد التأكيد. الدفع يكون عند الاستلام.`,
     },
     EFFECTIVENESS: {
-      fr: `Le G19S aide surtout pour une perte auditive légère à modérée. Il amplifie les sons et peut rendre les conversations plus claires.\n\nDepuis quand avez-vous des difficultés à entendre?`,
-      dz: `جي 19 إس تعاون خصوصا في النقص الخفيف ولا المتوسط في السمع. تكبر الصوت وتعاون الهدرة تبان أوضح.\n\nمن وقتاش عندك مشكل في السمع؟`,
+      fr: `Pour comprendre le cas, dites-moi d'abord: c'est pour vous ou pour un parent?`,
+      dz: `باش نفهم الحالة، قولي برك: السماعة ليك ولا للوالد ولا للوالدة؟`,
     },
     PRODUCT: {
       fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, réduction du bruit, couleurs bleu, rouge ou beige. Prix fixe: 14500 DA avec livraison gratuite.`,

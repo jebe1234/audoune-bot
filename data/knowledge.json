@@ -72,7 +72,8 @@
       "Say it helps hearing and makes speech clearer.",
       "Say it is best for mild to moderate hearing loss.",
       "For total deafness, severe pain, discharge, sudden hearing loss, infection, or dizziness, advise a specialist doctor.",
-      "Do not guarantee exact percentages of improvement."
+      "Do not guarantee exact percentages of improvement.",
+      "Ask simple hearing intake questions before recommending the product."
     ],
     "sales": [
       "Price is fixed at 14500 DA.",
@@ -81,6 +82,43 @@
       "Mention payment on delivery early when the customer shows fear or hesitation.",
       "Collect name, phone number, and wilaya when ordering. Do not require the full name."
     ]
+  },
+  "hearing_intake": {
+    "purpose": "Understand whether the customer or relative may be suitable for G19S before selling.",
+    "questions_ar": [
+      "السماعة ليك ولا للوالد ولا للوالدة؟",
+      "شحال في عمرو؟",
+      "المشكل في ودن وحدة ولا زوج؟",
+      "يسمع الصوت بصح الكلام ما يبانلوش مليح؟",
+      "يعلي التلفزيون بزاف؟",
+      "من وقتاش بدا مشكل السمع؟",
+      "كاين وجع، سيلان من الودن، دوخة، التهاب، ولا نقص سمع جا فجأة؟"
+    ],
+    "questions_fr": [
+      "C'est pour vous ou pour un parent?",
+      "Quel âge a la personne?",
+      "Le problème est dans une oreille ou les deux?",
+      "La personne entend les sons mais comprend mal les paroles?",
+      "Elle augmente beaucoup le volume de la télé?",
+      "Depuis quand le problème a commencé?",
+      "Il y a douleur, écoulement, vertige, infection, ou perte auditive soudaine?"
+    ],
+    "good_fit_signs_ar": [
+      "يسمع شوية بصح الكلام ما يبانلوش مليح",
+      "يعلي التلفزيون",
+      "يسقسي بزاف واش قلت",
+      "يتعب في القعدة كي يكونو ناس بزاف",
+      "النقص جا بالشوية مع الوقت"
+    ],
+    "doctor_first_signs_ar": [
+      "ما يسمعش خلاص",
+      "نقص السمع جا فجأة",
+      "كاين وجع في الودن",
+      "كاين سيلان ولا التهاب",
+      "كاينة دوخة قوية",
+      "كان حادث ولا ضربة في الراس"
+    ],
+    "style_rule": "Ask one question at a time. Do not diagnose. Recommend a doctor first for red flags."
   },
   "market_context": {
     "competing_brands": [
@@ -243,6 +281,24 @@
       "answer_fr": "Le G19S aide surtout les personnes avec une perte auditive légère à modérée. Si la personne n'entend rien du tout, ou s'il y a douleur, infection, vertige ou écoulement, il faut consulter un spécialiste.",
       "answer_ar": "السماعة تعاون بزاف الناس لي عندهم نقص خفيف ولا متوسط في السمع. إذا الشخص ما يسمعش خلاص، ولا عندو وجع، التهاب، دوخة، ولا سيلان من الودن، الأفضل يشوف طبيب مختص.",
       "category": "suitability",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_hearing_intake_start",
+      "question_summary": "Start hearing problem intake",
+      "answer_fr": "Pour comprendre le cas, dites-moi d'abord: c'est pour vous ou pour un parent?",
+      "answer_ar": "باش نفهم الحالة، قولي برك: السماعة ليك ولا للوالد ولا للوالدة؟",
+      "category": "hearing_intake",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_hearing_red_flags",
+      "question_summary": "When to see a doctor before buying",
+      "answer_fr": "Si la perte auditive est soudaine, ou s'il y a douleur, écoulement, infection, vertige, ou si la personne n'entend rien du tout, il vaut mieux voir un spécialiste avant d'acheter.",
+      "answer_ar": "إذا نقص السمع جا فجأة، ولا كاين وجع، سيلان، التهاب، دوخة، ولا الشخص ما يسمعش خلاص، الأفضل يشوف طبيب مختص قبل الشراء.",
+      "category": "medical_safety",
       "confidence": "high",
       "source": "admin"
     },
