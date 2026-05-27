@@ -1,7 +1,7 @@
 {
   "business": {
     "name": "Audoune",
-    "name_ar": "أودون للسمعيات",
+    "name_ar": "Audoune",
     "tagline_fr": "Entendez mieux, vivez mieux",
     "tagline_ar": "اسمع أحسن، عيش أحسن",
     "price": 14500,
@@ -63,7 +63,8 @@
       "Do not use Moroccan words.",
       "Prefer Algerian words such as واش، كيفاش، بزاف، دروك، تاع، برك، ماشي، كاش، شحال.",
       "If the user writes in French, answer in natural French.",
-      "If the user writes in Arabic or Darija, answer in Arabic script only, except Western digits are allowed.",
+      "If the user writes in Arabic or Darija, answer in Arabic script only, except Western digits and the brand name Audoune are allowed.",
+      "Never write the brand name in Arabic. Always write it exactly as Audoune.",
       "Do not use Arabic-Indic digits. Use 14500, 58, 24, 48, 20, 2, 1.9, 13485."
     ],
     "medical_safety": [
