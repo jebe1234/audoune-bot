@@ -12,6 +12,7 @@
     "delivery_time": "24 to 48 hours",
     "payment": "Cash on delivery only",
     "effectiveness_range": "Best for mild to moderate hearing loss; not a cure and not for total deafness",
+    "age_range": "10 to 90 years old",
     "arabic_digit_rule": "Use Western digits only: 0 1 2 3 4 5 6 7 8 9. Never use Arabic-Indic digits."
   },
   "product": {
@@ -75,7 +76,8 @@
       "Do not guarantee exact percentages of improvement.",
       "Ask simple hearing intake questions before recommending the product.",
       "If the customer says explain like I am 5, treat it as a simplicity request, not the patient's age.",
-      "If the patient is an actual child, recommend a specialist check first and do not sell aggressively."
+      "The product is suitable for people from 10 to 90 years old when the hearing problem matches mild to moderate hearing loss.",
+      "If the person is under 10 years old, say this product is generally for age 10 and above."
     ],
     "sales": [
       "Price is fixed at 14500 DA.",
