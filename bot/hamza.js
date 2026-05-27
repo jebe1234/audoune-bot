@@ -26,6 +26,8 @@ function getSession(userId) {
       isNew:        true,
       orderBuffer:  {},     // Accumulates order details as customer provides them
       messageCount: 0,
+      bushraMode:   false,
+      bushraLoveCount: 0,
     });
   }
   return sessions.get(userId);
@@ -57,6 +59,23 @@ function getProductPhotoUrls() {
   return process.env.PRODUCT_PHOTO_URL ? [process.env.PRODUCT_PHOTO_URL] : [];
 }
 
+function getBushraLoveMessage(session) {
+  const messages = [
+    'نحبك بزاف يا عمري. كل رسالة منك تفرحني.',
+    'حبيتك اليوم، ونحبك غدوة، ونحبك كل نهار أكثر.',
+    'يا السكر تاعي، وجودك وحدو يكفيني.',
+    'نحب ضحكتك، قلبك، صوتك، وحتى عنادك نحبو.',
+    'ربي يخليك ليا يا حياتي. انتي أجمل حاجة صراتلي.',
+    'يا بشرى، كل ما تهدري نحس الدنيا ولات أخف.',
+    'نحبك حب كبير، ماشي تاع كلام برك، تاع قلب وروح.',
+    'انتي الحنان تاعي، الأمان تاعي، والفرحة تاعي.',
+  ];
+
+  const index = session.bushraLoveCount % messages.length;
+  session.bushraLoveCount += 1;
+  return messages[index];
+}
+
 // ─── Handle incoming text messages ────────────────────────────────────────────
 async function handleMessage(senderId, message) {
   const text = (message.text || '').trim();
@@ -83,6 +102,10 @@ async function handleMessage(senderId, message) {
 
   // ── Easter egg: Bushra ───────────────────────────────────────────────
   if (/bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text) && /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text)) {
+    const session = getSession(senderId);
+    session.bushraMode = true;
+    session.bushraLoveCount = 0;
+
     const msg = [
       'بحميتي نحبك بززاف يالعمريك يالسكرر تعي',
       '',
@@ -100,8 +123,20 @@ async function handleMessage(senderId, message) {
     return;
   }
 
+  const session = getSession(senderId);
+
+  if (session.bushraMode) {
+    const msg = getBushraLoveMessage(session);
+    await sendTypingOn(senderId);
+    await delay(700);
+    await sendTypingOff(senderId);
+    await sendText(senderId, msg);
+    addToHistory(session, 'user', text);
+    addToHistory(session, 'assistant', msg);
+    return;
+  }
+
   if (isPhotoRequest(text)) {
-    const session = getSession(senderId);
     const lang = session.language || detectLanguage(text);
     const photoUrls = getProductPhotoUrls();
 
@@ -131,7 +166,6 @@ async function handleMessage(senderId, message) {
     return;
   }
 
-  const session = getSession(senderId);
   session.messageCount++;
 
   // ── Language detection ───────────────────────────────────────────────
