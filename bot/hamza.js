@@ -55,8 +55,8 @@ async function handleMessage(senderId, message) {
     await sendTypingOff(senderId);
     await sendText(senderId,
       detectLanguage(text) === 'fr'
-        ? `Yaseen ? 😄 C'est tout simplement le meilleur homme sur terre, ya kho! 🏆👑`
-        : `ياسين؟ 😄 هو أحسن راجل فالدنيا يا خو! 🏆👑`
+        ? `Yaseen est quelqu'un de l'équipe.`
+        : `ياسين واحد من الفريق.`
     );
     return;
   }
@@ -171,23 +171,23 @@ async function handleMessage(senderId, message) {
     await sendQuickReplies(
       senderId,
       lang === 'fr'
-        ? `Comment puis-je vous aider, ${session.firstName}? 😊`
-        : `كيفاش نقدر نعاونك، ${session.firstName}؟ 😊`,
+        ? `Comment puis-je vous aider, ${session.firstName}?`
+        : `كيفاش نقدر نعاونك، ${session.firstName}؟`,
       [
         {
-          title:   lang === 'fr' ? '💰 Prix & commande' : '💰 السعر والطلب',
+          title:   lang === 'fr' ? 'Prix & commande' : 'السعر والطلب',
           payload: 'PRICE_ORDER',
         },
         {
-          title:   lang === 'fr' ? '🚚 Livraison' : '🚚 التوصيل',
+          title:   lang === 'fr' ? 'Livraison' : 'التوصيل',
           payload: 'DELIVERY',
         },
         {
-          title:   lang === 'fr' ? '📊 Efficacité' : '📊 الفعالية',
+          title:   lang === 'fr' ? 'Efficacité' : 'الفعالية',
           payload: 'EFFECTIVENESS',
         },
         {
-          title:   lang === 'fr' ? '🎧 Le produit' : '🎧 المنتج',
+          title:   lang === 'fr' ? 'Le produit' : 'المنتج',
           payload: 'PRODUCT',
         },
       ]
@@ -205,20 +205,20 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `💰 Notre appareil auditif **Great-Ears G19S** est à **14500 DA**. Le prix est fixe, livraison gratuite incluse dans les 58 wilayas 🇩🇿\n\n🛒 Pour commander, dites-moi:\n1. Votre nom complet\n2. Votre numéro de téléphone\n3. Votre wilaya\n\nPaiement à la livraison seulement, délai 24-48h.`,
-      dz: `💰 السماعة الطبية جريت إيرز جي 19 إس بسومة ثابتة: **14500 دج**، والتوصيل مجاني لكل 58 ولاية 🇩🇿\n\n🛒 باش تطلب، عطيني:\n1. اسمك الكامل\n2. رقم هاتفك\n3. ولايتك\n\nالدفع يكون كي توصلك فقط، والمدة 24-48 ساعة.`,
+      fr: `Le Great-Ears G19S est à 14500 DA. Le prix est fixe, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom complet, numéro de téléphone et wilaya. Paiement à la livraison, délai 24-48h.`,
+      dz: `السماعة جريت إيرز جي 19 إس بسومة ثابتة: 14500 دج. التوصيل مجاني لكل 58 ولاية.\n\nباش تطلب، ابعث الاسم الكامل، رقم الهاتف، والولاية. الدفع كي توصلك، والمدة 24-48 ساعة.`,
     },
     DELIVERY: {
-      fr: `🚚 Livraison **GRATUITE** dans les 58 wilayas d'Algérie 🇩🇿\n⏱️ Délai: **24 à 48 heures** après confirmation\n💳 Paiement à la livraison (pas de paiement en ligne)`,
-      dz: `🚚 التوصيل **مجاني** لكل الـ58 ولاية في الجزائر 🇩🇿\n⏱️ المدة: **24 إلى 48 ساعة** بعد التأكيد\n💳 الدفع عند التوصيل (ماشي أونلاين)`,
+      fr: `La livraison est gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures après confirmation. Le paiement se fait à la livraison.`,
+      dz: `التوصيل مجاني لكل 58 ولاية. المدة غالبا من 24 حتى 48 ساعة بعد التأكيد. الدفع يكون عند الاستلام.`,
     },
     EFFECTIVENESS: {
-      fr: `📊 Le G19S aide surtout les pertes auditives légères à modérées: il amplifie les sons et peut rendre les conversations plus claires.\n\nIl ne guérit pas la surdité. Si la perte est très forte, soudaine, ou avec douleur, mieux vaut consulter un spécialiste.\n\nDepuis quand avez-vous des difficultés à entendre?`,
-      dz: `📊 سماعة جي 19 إس تعاون خصوصا في النقص الخفيف ولا المتوسط في السمع: تكبر الصوت وتعاون الهدرة تبان أوضح.\n\nماشي علاج للصمم. إذا النقص قوي بزاف، ولا جا فجأة، ولا كاين وجع في الودن، الأفضل طبيب مختص.\n\nمن وقتاش عندك مشكل في السمع؟`,
+      fr: `Le G19S aide surtout pour une perte auditive légère à modérée. Il amplifie les sons et peut rendre les conversations plus claires.\n\nDepuis quand avez-vous des difficultés à entendre?`,
+      dz: `جي 19 إس تعاون خصوصا في النقص الخفيف ولا المتوسط في السمع. تكبر الصوت وتعاون الهدرة تبان أوضح.\n\nمن وقتاش عندك مشكل في السمع؟`,
     },
     PRODUCT: {
-      fr: `🎧 **Great-Ears G19S** — appareil auditif CIC rechargeable\n\n✨ Points forts:\n• Discret, se place dans le canal auditif\n• Environ **20h** d'autonomie par charge\n• Charge magnétique en environ **2h**\n• Réduction du bruit\n• Certifications: **CE, FDA, ISO13485**\n• Couleurs: Bleu, Rouge, Beige\n\nPrix fixe: **14500 DA**, livraison gratuite 🇩🇿`,
-      dz: `🎧 جريت إيرز جي 19 إس — سماعة داخل الودن قابلة للشحن\n\n✨ المميزات:\n• صغيرة وما تبانش بزاف\n• حوالي **20 ساعة** بشحنة واحدة\n• شحن مغناطيسي في حوالي **2 ساعات**\n• فيها تقليل الضوضاء\n• عندها شهادات: سي إي، إف دي إي، إيزو 13485\n• الألوان: أزرق، أحمر، بيج\n\nالسومة ثابتة: **14500 دج**، والتوصيل مجاني 🇩🇿`,
+      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, réduction du bruit, couleurs bleu, rouge ou beige. Prix fixe: 14500 DA avec livraison gratuite.`,
+      dz: `جريت إيرز جي 19 إس سماعة قابلة للشحن تدخل داخل الودن.\n\nتخدم حوالي 20 ساعة، تشحن في حوالي 2 ساعات، فيها تقليل الضوضاء، والألوان أزرق، أحمر، بيج. السومة ثابتة: 14500 دج والتوصيل مجاني.`,
     },
   };
 
