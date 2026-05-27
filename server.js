@@ -90,8 +90,25 @@ app.get('/', (req, res) => {
   res.json({ status: 'online', bot: 'Hamza 🎧', business: 'Audoune' });
 });
 
+app.get('/health', (req, res) => {
+  res.json({ status: 'online', bot: 'Hamza 🎧', uptime: Math.floor(process.uptime()) + 's' });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🎧 Hamza is online on port ${PORT}`);
-  console.log(`📡 Webhook URL: http://localhost:${PORT}/webhook`);
+  console.log(`📡 Webhook: https://audoune-bot-production.up.railway.app/webhook`);
+
+  // ─── Self-ping every 14 minutes to stay alive 24/7 ──────────────────────────
+  const SELF_URL = 'https://audoune-bot-production.up.railway.app/health';
+  setInterval(async () => {
+    try {
+      const axios = require('axios');
+      await axios.get(SELF_URL, { timeout: 10000 });
+      console.log('💓 Keep-alive ping sent —', new Date().toISOString());
+    } catch (e) {
+      console.warn('⚠️ Keep-alive ping failed:', e.message);
+    }
+  }, 14 * 60 * 1000); // every 14 minutes
 });
+
