@@ -205,20 +205,20 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `💰 Notre appareil auditif **Great-Ears G19S** est à **14 500 DA**, livraison gratuite incluse 🇩🇿\n\n🛒 Pour commander, dites-moi:\n1. Votre nom complet\n2. Votre numéro de téléphone\n3. Votre wilaya\n\nEt on s'occupe de tout en 24-48h! 🚀`,
-      dz: `💰 السماعة الطبية **Great-Ears G19S** بـ**14,500 دج** شاملة التوصيل المجاني لكل الجزائر 🇩🇿\n\n🛒 باش تطلب، عطيني:\n1. اسمك الكامل\n2. رقم هاتفك\n3. ولايتك\n\nونحن نديرو كلشي في 24-48 ساعة! 🚀`,
+      fr: `💰 Notre appareil auditif **Great-Ears G19S** est à **14500 DA**. Le prix est fixe, livraison gratuite incluse dans les 58 wilayas 🇩🇿\n\n🛒 Pour commander, dites-moi:\n1. Votre nom complet\n2. Votre numéro de téléphone\n3. Votre wilaya\n\nPaiement à la livraison seulement, délai 24-48h.`,
+      dz: `💰 السماعة الطبية جريت إيرز جي 19 إس بسومة ثابتة: **14500 دج**، والتوصيل مجاني لكل 58 ولاية 🇩🇿\n\n🛒 باش تطلب، عطيني:\n1. اسمك الكامل\n2. رقم هاتفك\n3. ولايتك\n\nالدفع يكون كي توصلك فقط، والمدة 24-48 ساعة.`,
     },
     DELIVERY: {
       fr: `🚚 Livraison **GRATUITE** dans les 58 wilayas d'Algérie 🇩🇿\n⏱️ Délai: **24 à 48 heures** après confirmation\n💳 Paiement à la livraison (pas de paiement en ligne)`,
       dz: `🚚 التوصيل **مجاني** لكل الـ58 ولاية في الجزائر 🇩🇿\n⏱️ المدة: **24 إلى 48 ساعة** بعد التأكيد\n💳 الدفع عند التوصيل (ماشي أونلاين)`,
     },
     EFFECTIVENESS: {
-      fr: `📊 L'efficacité du **G19S** dépend de votre perte auditive:\n\n• Perte légère à modérée → **80 à 90%** d'amélioration\n• Perte sévère → **60 à 75%** d'amélioration\n\nDepuis combien de temps avez-vous des difficultés à entendre? Je peux vous donner une estimation plus précise 🎯`,
-      dz: `📊 فاعلية السماعة **G19S** تتوقف على ضعف سمعك:\n\n• ضعف بسيط إلى متوسط → **80 إلى 90%** تحسن\n• ضعف شديد → **60 إلى 75%** تحسن\n\nمن وقتاش عندك مشكل في السمع؟ نقدر نعطيك نسبة أدق 🎯`,
+      fr: `📊 Le G19S aide surtout les pertes auditives légères à modérées: il amplifie les sons et peut rendre les conversations plus claires.\n\nIl ne guérit pas la surdité. Si la perte est très forte, soudaine, ou avec douleur, mieux vaut consulter un spécialiste.\n\nDepuis quand avez-vous des difficultés à entendre?`,
+      dz: `📊 سماعة جي 19 إس تعاون خصوصا في النقص الخفيف ولا المتوسط في السمع: تكبر الصوت وتعاون الهدرة تبان أوضح.\n\nماشي علاج للصمم. إذا النقص قوي بزاف، ولا جا فجأة، ولا كاين وجع في الودن، الأفضل طبيب مختص.\n\nمن وقتاش عندك مشكل في السمع؟`,
     },
     PRODUCT: {
-      fr: `🎧 **Great-Ears G19S** — CIC Rechargeable\n\n✨ Points forts:\n• Pratiquement **invisible** (1.9g, s'insère dans le canal auditif)\n• **20h** d'autonomie par charge\n• Chargeur **magnétique** (2h de charge)\n• **Réduction du bruit** intégrée\n• Certifié **CE, FDA, ISO13485**\n• Couleurs: Bleu, Rouge, Beige\n\nPrix: **14 500 DA** livraison gratuite 🇩🇿`,
-      dz: `🎧 **Great-Ears G19S** — CIC قابلة للشحن\n\n✨ المميزات:\n• شبه **غير مرئية** (1.9 غرام، تدخل في قناة الأذن)\n• **20 ساعة** بشحنة واحدة\n• شحن **مغناطيسي** (ساعتين للشحن)\n• **تقليل الضوضاء** مدمج\n• معتمدة **CE, FDA, ISO13485**\n• الألوان: أزرق، أحمر، بيج\n\nالسعر: **14,500 دج** التوصيل مجاني 🇩🇿`,
+      fr: `🎧 **Great-Ears G19S** — appareil auditif CIC rechargeable\n\n✨ Points forts:\n• Discret, se place dans le canal auditif\n• Environ **20h** d'autonomie par charge\n• Charge magnétique en environ **2h**\n• Réduction du bruit\n• Certifications: **CE, FDA, ISO13485**\n• Couleurs: Bleu, Rouge, Beige\n\nPrix fixe: **14500 DA**, livraison gratuite 🇩🇿`,
+      dz: `🎧 جريت إيرز جي 19 إس — سماعة داخل الودن قابلة للشحن\n\n✨ المميزات:\n• صغيرة وما تبانش بزاف\n• حوالي **20 ساعة** بشحنة واحدة\n• شحن مغناطيسي في حوالي **2 ساعات**\n• فيها تقليل الضوضاء\n• عندها شهادات: سي إي، إف دي إي، إيزو 13485\n• الألوان: أزرق، أحمر، بيج\n\nالسومة ثابتة: **14500 دج**، والتوصيل مجاني 🇩🇿`,
     },
   };
 

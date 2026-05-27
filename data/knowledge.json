@@ -6,154 +6,351 @@
     "tagline_ar": "اسمع أحسن، عيش أحسن",
     "price": 14500,
     "currency": "DA",
+    "price_fixed": true,
     "delivery_free": true,
-    "delivery_wilayas": "all 58 wilayas of Algeria",
+    "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
-    "effectiveness_range": "60% to 90% depending on hearing loss level"
+    "payment": "Cash on delivery only",
+    "effectiveness_range": "Best for mild to moderate hearing loss; not a cure and not for total deafness",
+    "arabic_digit_rule": "Use Western digits only: 0 1 2 3 4 5 6 7 8 9. Never use Arabic-Indic digits."
   },
   "product": {
     "model": "Great-Ears G19S",
-    "style": "CIC (Completely-In-Canal) — ITE Rechargeable",
-    "description_fr": "Appareil auditif CIC rechargeable, presque invisible dans le canal auditif. Idéal pour une perte auditive légère à modérée. Compact, discret et confortable.",
-    "description_ar": "سماعة طبية CIC قابلة للشحن، تدخل داخل قناة الأذن تماماً وتكاد تكون غير مرئية. مثالية لضعف السمع البسيط إلى المتوسط. صغيرة، مريحة وغير ظاهرة.",
+    "model_ar": "جريت إيرز جي 19 إس",
+    "style": "CIC rechargeable in-canal hearing aid",
+    "style_ar": "سماعة داخل الأذن قابلة للشحن",
+    "description_fr": "Appareil auditif rechargeable, discret, conçu pour aider les personnes avec une perte auditive légère à modérée.",
+    "description_ar": "سماعة طبية صغيرة وقابلة للشحن، تعاون الناس لي عندهم نقص خفيف ولا متوسط في السمع.",
     "key_features": [
-      "Volume Control Trimmer — تحكم في مستوى الصوت",
-      "On/Off Switch — مفتاح تشغيل وإيقاف",
-      "Magnetic suction charging — شحن مغناطيسي سهل",
-      "Low power consumption — استهلاك منخفض للطاقة",
-      "Small size design — تصميم صغير الحجم",
-      "Noise reduction — تقليل الضوضاء"
+      "Volume control",
+      "On/off switch",
+      "Magnetic charging",
+      "Low power consumption",
+      "Small in-canal design",
+      "Noise reduction"
+    ],
+    "key_features_ar": [
+      "تتحكم في مستوى الصوت",
+      "زر تشغيل وإيقاف",
+      "شحن مغناطيسي ساهل",
+      "استهلاك قليل للطاقة",
+      "تصميم صغير يدخل داخل الودن",
+      "تقليل الضوضاء"
     ],
     "specs": {
-      "peak_ospl90": "≤129dB+3dB",
-      "haf_ospl90": "≤106dB±4dB",
-      "peak_gain": "≤32dB",
-      "haf_fog_gain": "23dB±5dB",
-      "frequency_range": "300Hz – 3500Hz",
-      "distortion": "≤3% at 500Hz, 800Hz, 1600Hz",
-      "equivalent_input_noise": "≤25dB",
-      "battery": "Built-in Lithium Battery (rechargeable)",
-      "battery_current": "1.5mA",
       "working_time": "20 hours per charge",
       "charging_time": "2 hours",
-      "colors": ["Blue", "Red", "Beige"],
-      "material": "ABS",
-      "weight": "1.9g"
+      "weight": "1.9g",
+      "colors": [
+        "Blue",
+        "Red",
+        "Beige"
+      ],
+      "frequency_range": "300Hz to 3500Hz",
+      "peak_gain": "up to 32dB",
+      "battery": "Built-in rechargeable lithium battery"
     },
-    "packaging": {
-      "size": "10.7 x 4.6 x 10.7 cm",
-      "gross_weight": "0.17 kg",
-      "type": "Small gift box with master carton"
-    },
-    "certifications": ["ISO13485", "ROHS", "MSDS", "FCC", "FDA", "CE"]
+    "certifications": [
+      "CE",
+      "FDA",
+      "ISO13485"
+    ],
+    "certifications_ar": "سي إي، إف دي إي، إيزو 13485"
+  },
+  "bot_rules": {
+    "language": [
+      "Use neutral Algerian Darija for Arabic-script customers.",
+      "Do not use Moroccan words.",
+      "Prefer Algerian words such as واش، كيفاش، بزاف، دروك، تاع، برك، ماشي، كاش، شحال.",
+      "If the user writes in French, answer in natural French.",
+      "If the user writes in Arabic or Darija, answer in Arabic script only, except Western digits are allowed.",
+      "Do not use Arabic-Indic digits. Use 14500, 58, 24, 48, 20, 2, 1.9, 13485."
+    ],
+    "medical_safety": [
+      "Never say the product cures hearing loss.",
+      "Say it helps hearing and makes speech clearer.",
+      "Say it is best for mild to moderate hearing loss.",
+      "For total deafness, severe pain, discharge, sudden hearing loss, infection, or dizziness, advise a specialist doctor.",
+      "Do not guarantee exact percentages of improvement."
+    ],
+    "sales": [
+      "Price is fixed at 14500 DA.",
+      "Do not negotiate the price.",
+      "Mention free delivery to all 58 wilayas.",
+      "Mention payment on delivery early when the customer shows fear or hesitation.",
+      "Collect full name, phone number, and wilaya when ordering."
+    ]
+  },
+  "market_context": {
+    "competing_brands": [
+      "Phonak",
+      "Oticon",
+      "Signia",
+      "Siemens",
+      "Starkey",
+      "Widex",
+      "ReSound",
+      "Bernafon",
+      "Beurer",
+      "generic imported rechargeable hearing aids"
+    ],
+    "typical_price_ranges": [
+      "Simple online sound amplifiers: about 5000 to 20000 DA.",
+      "Generic rechargeable hearing aids online: about 14000 to 50000 DA.",
+      "Branded second-hand or imported devices: about 45000 to 160000 DA.",
+      "Professional fitted pairs can reach about 250000 to 300000 DA or more."
+    ],
+    "where_people_buy": [
+      "Audioprothesis centers after ENT or audiogram",
+      "Medical supply shops and parapharmacies",
+      "Online marketplaces such as Ouedkniss",
+      "Facebook and Instagram pages using cash on delivery",
+      "Informal imported-device sellers"
+    ],
+    "common_complaints_ar": [
+      "يصفر في الودن",
+      "الصوت يجي مشوش",
+      "البطارية تفرغ بسرعة",
+      "ما يبانش الفرق في الضجيج",
+      "كبير ويبان",
+      "يوجع الودن",
+      "ما فهمتش كيفاش نستعملو",
+      "شريتو وما نفعنيش",
+      "ما كانش ضمان ولا تبديل"
+    ]
+  },
+  "buyer_psychology": {
+    "cash_on_delivery_reasons": [
+      "Low trust in online prepayment and refunds",
+      "Fear of fake pages and wrong products",
+      "Habit of paying يد بيد",
+      "Many customers do not use bank cards online",
+      "Customers want to inspect the product before paying"
+    ],
+    "top_fears_ar": [
+      "يبعثولي حاجة خلاف",
+      "ما تخدمش",
+      "نخلص وما يوصلني والو",
+      "ما يردوليش الدراهم",
+      "تكون مضرة للوالد ولا الوالدة",
+      "الصفحة تكون ماشي موثوقة"
+    ],
+    "trust_signals": [
+      "Cash on delivery only",
+      "Free delivery to 58 wilayas",
+      "Clear price",
+      "Real product photos or videos",
+      "Certifications: CE, FDA, ISO13485",
+      "Honest suitability limits",
+      "Warm support after purchase",
+      "No exaggerated medical claims"
+    ],
+    "proof_questions_ar": [
+      "كاين فيديو كي تخدم؟",
+      "كاين ناس جربوها؟",
+      "عندكم شهادات؟",
+      "وريني كيفاش تخدم",
+      "نقدر نشوفها قبل ما نخلص؟",
+      "كاينة ضمانة؟",
+      "إذا ما صلحتش واش ندير؟",
+      "تصلح لكبار السن؟"
+    ]
+  },
+  "darija_context": {
+    "shopping_price_phrases": [
+      "شحال السومة؟",
+      "شحال راه السعر؟",
+      "بقداه هادي؟",
+      "شحال تديروها؟",
+      "كاش تخفيض؟",
+      "السعر ثابت ولا كاين تفاوض؟",
+      "التوصيل داخل في السومة؟",
+      "شحال نخلص كي توصلني؟"
+    ],
+    "hesitation_phrases": [
+      "غالي بزاف",
+      "نقصلي شوية",
+      "ما قدرتش عليها",
+      "واش مضمونة؟",
+      "واش تخدم مليح؟",
+      "كاينة ضمانة؟",
+      "نقدر نشوفها قبل ما نخلص؟",
+      "ماشي تقليد؟",
+      "راني خايف نندم",
+      "شفت وحدة أرخص منها"
+    ],
+    "polite_phrases": [
+      "صحا خويا",
+      "صحا أختي",
+      "يعطيك الصحة",
+      "بارك الله فيك",
+      "ربي يحفظك",
+      "ربي يخليك",
+      "مرحبا بيك",
+      "على العين والراس",
+      "ما كاش مشكل",
+      "ربي يشافيه",
+      "ربي يشافيها"
+    ],
+    "elderly_health_phrases": [
+      "بابا ما ولاش يسمع مليح",
+      "يما راهي تسقسي بزاف وما تسمعش",
+      "جدي كي نهدرولو يعاود يقول واش قلت؟",
+      "كي يكون التلفزيون شاعل ما يسمعناش",
+      "راه يتقلق خاطر ما يفهمش الهدرة",
+      "ولى يبعد على القعدة خاطر ما يسمعش مليح",
+      "عندو نقص في السمع",
+      "يسمع الصوت بصح ما يفرقش الكلام"
+    ],
+    "regional_strategy": [
+      "Use neutral Algerian Darija understood in Algiers, Oran, Constantine, Annaba, and most wilayas.",
+      "Do not over-localize unless the customer uses local words first.",
+      "Avoid Moroccan-style wording even with western Algerian customers."
+    ]
   },
   "faqs": [
     {
       "id": "faq_price",
-      "question_summary": "Price of the hearing aid",
-      "answer_fr": "Notre appareil auditif Great-Ears G19S est à **14 500 DA**, livraison gratuite incluse partout en Algérie 🇩🇿 Pas de frais cachés.",
-      "answer_ar": "سعر سماعة Great-Ears G19S هو **14,500 دج** شاملة التوصيل المجاني لكل ولايات الجزائر 🇩🇿 بلا أي تكاليف خفية.",
+      "question_summary": "Price and fixed price",
+      "answer_fr": "Le prix du Great-Ears G19S est fixe: 14500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait uniquement à la livraison.",
+      "answer_ar": "السومة ثابتة خويا: 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون غير كي توصلك السماعة.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
     },
     {
       "id": "faq_delivery",
-      "question_summary": "Delivery info — free and time",
-      "answer_fr": "✅ La livraison est **GRATUITE** dans toutes les 58 wilayas d'Algérie 🇩🇿\n⏱️ Délai de livraison: **24 à 48 heures** après confirmation de la commande.",
-      "answer_ar": "✅ التوصيل **مجاني** لكل الـ58 ولاية في الجزائر 🇩🇿\n⏱️ مدة التوصيل: **24 إلى 48 ساعة** بعد تأكيد الطلب.",
+      "question_summary": "Delivery",
+      "answer_fr": "La livraison est gratuite dans les 58 wilayas. Le délai habituel est de 24 à 48 heures après confirmation.",
+      "answer_ar": "التوصيل مجاني لكل 58 ولاية. المدة عادة من 24 حتى 48 ساعة بعد تأكيد الطلب.",
       "category": "delivery",
       "confidence": "high",
       "source": "admin"
     },
     {
+      "id": "faq_payment",
+      "question_summary": "Cash on delivery",
+      "answer_fr": "Le paiement se fait à la livraison seulement. Vous ne payez rien en ligne.",
+      "answer_ar": "الدفع عند الاستلام فقط. ما تخلص والو أونلاين، تخلص غير كي يوصلك الساعي.",
+      "category": "payment",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_suitability",
+      "question_summary": "Who the product is suitable for",
+      "answer_fr": "Le G19S aide surtout les personnes avec une perte auditive légère à modérée. Si la personne n'entend rien du tout, ou s'il y a douleur, infection, vertige ou écoulement, il faut consulter un spécialiste.",
+      "answer_ar": "السماعة تعاون بزاف الناس لي عندهم نقص خفيف ولا متوسط في السمع. إذا الشخص ما يسمعش خلاص، ولا عندو وجع، التهاب، دوخة، ولا سيلان من الودن، الأفضل يشوف طبيب مختص.",
+      "category": "suitability",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_elderly_parent",
+      "question_summary": "Elderly parent suitability",
+      "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser. Pour une perte très forte ou un problème médical de l'oreille, mieux vaut consulter un spécialiste.",
+      "answer_ar": "ربي يحفظو ويطول في عمرو. إذا باباك يسمع شوية بصح ما يفرقش الكلام مليح، ولا يعلي التلفزيون بزاف، تقدر تعاونو. السماعة تعاون في النقص الخفيف والمتوسط. إذا ما يسمعش تماما ولا عندو وجع ولا سيلان، الأفضل طبيب مختص قبل الشراء.",
+      "category": "suitability",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
       "id": "faq_effectiveness",
-      "question_summary": "Effectiveness percentage of hearing aid",
-      "answer_fr": "📊 L'efficacité dépend du type de perte auditive:\n• Perte **légère à modérée**: amélioration de **80 à 90%**\n• Perte **sévère**: amélioration de **60 à 75%**\n\nPour vous donner un chiffre précis, pouvez-vous me dire depuis combien de temps vous avez des difficultés à entendre?",
-      "answer_ar": "📊 الفاعلية تتوقف على نوع ضعف السمع:\n• ضعف **بسيط إلى متوسط**: تحسن بين **80 و90%**\n• ضعف **شديد**: تحسن بين **60 و75%**\n\nعلاش تخبرني شوية على حالتك؟ نقدر نعطيك نسبة أدق 🎯",
+      "question_summary": "Does it work",
+      "answer_fr": "Elle aide à amplifier et clarifier les sons pour les pertes légères à modérées. Elle ne guérit pas la surdité et ne remplace pas une consultation médicale quand le problème est sévère.",
+      "answer_ar": "تنفع للناس لي عندهم نقص خفيف ولا متوسط في السمع، كي يسمعو الصوت بصح الكلام ما يبانلهمش مليح. تعاون باش يسمع الهدرة والتلفزيون والقعدة مع العائلة أوضح. إذا كان النقص قوي بزاف ولا كاين مرض في الودن، الأفضل يدير كشف عند طبيب مختص.",
       "category": "effectiveness",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_invisible",
-      "question_summary": "Is the hearing aid visible / invisible",
-      "answer_fr": "😊 Oui! Le G19S est un modèle **CIC (Completely-In-Canal)** — il se place entièrement dans le canal auditif. La plupart des gens ne le verront pas du tout! Il pèse seulement **1.9 grammes**.",
-      "answer_ar": "😊 آه! السماعة G19S نوع **CIC** — تدخل بالكامل داخل قناة الأذن. الأغلبية ما يشوفوهاش! وزنها غير **1.9 غرام** فقط.",
-      "category": "design",
+      "id": "faq_too_expensive",
+      "question_summary": "Objection: too expensive",
+      "answer_fr": "Je comprends. Le prix est fixe à 14500 DA, mais il inclut la livraison gratuite, un appareil rechargeable, discret, et le paiement à la livraison. Vous ne payez rien avant réception.",
+      "answer_ar": "صح، نفهمك خويا. بصح هادي قابلة للشحن وما تحتاجش تبدل البطاريات كل مرة، صغيرة وتدخل داخل الودن، والتوصيل مجاني حتى لباب الدار في 58 ولاية. السومة ثابتة 14500 دج، وتخلص غير كي توصلك وتشوفها.",
+      "category": "price",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_charging",
-      "question_summary": "How to charge / battery life",
-      "answer_fr": "🔋 La batterie dure **20 heures** par charge complète.\n⚡ Temps de charge: seulement **2 heures** via chargeur magnétique (comme un aimant, très simple!).",
-      "answer_ar": "🔋 البطارية تشتغل **20 ساعة** بشحنة واحدة.\n⚡ وقت الشحن: **ساعتين فقط** عبر الشاحن المغناطيسي (كيما مغناطيس، سهل بزاف!).",
-      "category": "battery",
+      "id": "faq_scared_scam",
+      "question_summary": "Objection: fear of scam",
+      "answer_fr": "Votre inquiétude est normale. Avec Audoune, vous ne payez rien à l'avance. Le paiement se fait à la livraison seulement, et notre équipe reste disponible pour vous accompagner.",
+      "answer_ar": "عندك الحق تخاف، بزاف ناس ولاو يحتاطو. معانا ما تخلص والو من قبل، الدفع كي توصلك فقط. التوصيل لباب الدار، وتشوف المنتج قدامك، وإذا كان كاين مشكل في المنتج تعاونك الخدمة تاعنا.",
+      "category": "trust",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_noise",
-      "question_summary": "Noise reduction / sound quality",
-      "answer_fr": "🎵 Oui, le G19S intègre un système de **réduction du bruit** et couvre une plage de fréquences de **300 à 3500 Hz** — parfait pour entendre les conversations normales avec clarté.",
-      "answer_ar": "🎵 آه، السماعة G19S فيها نظام **تقليل الضوضاء** وتغطي ترددات من **300 إلى 3500 Hz** — ممتاز للمحادثات العادية بوضوح.",
-      "category": "sound_quality",
+      "id": "faq_tried_other_failed",
+      "question_summary": "Objection: tried another hearing aid and it failed",
+      "answer_fr": "Je comprends. Souvent, un appareil ne marche pas bien parce qu'il n'est pas adapté au niveau de perte auditive, ou parce que le son est de mauvaise qualité. Le G19S aide surtout pour les pertes légères à modérées; je peux vous poser quelques questions pour voir s'il convient.",
+      "answer_ar": "نفهمك، كاين سماعات بزاف ما يكونوش مناسبين ولا يكون الصوت تاعهم مشوش. هادي صغيرة وقابلة للشحن، وتعاون خصوصا في النقص الخفيف والمتوسط. نقدر نشرحلك كيفاش تستعملها خطوة بخطوة، وإذا الحالة تاع السمع قوية بزاف نقولك بصراحة بلي لازم كشف عند مختص.",
+      "category": "effectiveness",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_colors",
-      "question_summary": "Available colors",
-      "answer_fr": "🎨 Le G19S est disponible en 3 couleurs: **Bleu, Rouge et Beige**. La couleur beige est la plus discrète et la plus populaire.",
-      "answer_ar": "🎨 السماعة G19S متوفرة بـ3 ألوان: **أزرق، أحمر، وبيج**. اللون البيج هو الأكثر طلباً لأنه أقل ظهوراً.",
-      "category": "design",
+      "id": "faq_embarrassed",
+      "question_summary": "Objection: embarrassed to wear hearing aid",
+      "answer_fr": "C'est très courant. Le G19S est discret et se place dans l'oreille. C'est comme des lunettes pour les yeux: un outil simple pour mieux vivre et mieux communiquer.",
+      "answer_ar": "ما فيها حتى حشمة. كيما النظارات تعاون العينين، السماعة تعاون الودنين. وزيد هادي صغيرة وتدخل داخل الودن وما تبانش بزاف. المهم تسمع دارك وولادك مليح وترتاح في الهدرة.",
+      "category": "stigma",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_payment",
-      "question_summary": "Payment method",
-      "answer_fr": "💳 Vous payez **à la livraison** (contre remboursement) — pas besoin de payer en ligne. Le livreur encaisse le paiement quand vous recevez votre colis.",
-      "answer_ar": "💳 الدفع يكون **عند التوصيل** — ماشي حاجة تدفع أونلاين. الساعي يجيب الطرد وتدفع وقتها.",
-      "category": "payment",
+      "id": "faq_proof",
+      "question_summary": "Customer asks for proof",
+      "answer_fr": "Je peux vous expliquer comment elle fonctionne et ce qu'elle peut ou ne peut pas faire. Elle est certifiée CE, FDA et ISO13485, rechargeable, et le paiement se fait seulement à la livraison.",
+      "answer_ar": "نقدر نشرحلك كيفاش تخدم وواش تقدر تعاون فيه بصراحة. السماعة عندها شهادات جودة: سي إي، إف دي إي، وإيزو 13485، قابلة للشحن، والدفع يكون غير كي توصلك.",
+      "category": "trust",
       "confidence": "high",
       "source": "admin"
     },
     {
       "id": "faq_order",
       "question_summary": "How to order",
-      "answer_fr": "🛒 Pour commander, j'ai besoin de:\n1. Votre **nom complet**\n2. Votre **numéro de téléphone**\n3. Votre **wilaya**\n\nDonnez-moi ces infos et on s'occupe de tout! 🚀",
-      "answer_ar": "🛒 باش تطلب، محتاج:\n1. **اسمك الكامل**\n2. **رقم هاتفك**\n3. **ولايتك**\n\nعطيني هاد المعلومات ونحن نديرو كلشي! 🚀",
+      "answer_fr": "Pour commander, envoyez votre nom complet, numéro de téléphone, et wilaya. La livraison est gratuite et vous payez à la livraison.",
+      "answer_ar": "باش تطلب، ابعثلي اسمك الكامل، رقم الهاتف، والولاية. التوصيل مجاني وتخلص كي توصلك.",
       "category": "order",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_return",
-      "question_summary": "Return or warranty policy",
-      "answer_fr": "🛡️ Notre produit est certifié ISO13485, CE, FCC et FDA — des certifications médicales internationales garantissant la qualité. Pour toute question après achat, notre équipe est disponible.",
-      "answer_ar": "🛡️ منتجنا معتمد بشهادات دولية: ISO13485، CE، FCC وFDA — ضمانات طبية دولية على الجودة. لأي سؤال بعد الشراء، فريقنا متاح.",
-      "category": "warranty",
+      "id": "faq_product_features",
+      "question_summary": "Product features",
+      "answer_fr": "Le G19S est rechargeable, petit, discret, avec contrôle du volume, réduction du bruit, charge magnétique, environ 20 heures d'autonomie et 2 heures de charge.",
+      "answer_ar": "سماعة جي 19 إس قابلة للشحن، صغيرة، ما تبانش بزاف، فيها تحكم في الصوت، تقليل الضوضاء، شحن مغناطيسي، تخدم حوالي 20 ساعة وتشحن في حوالي 2 ساعات.",
+      "category": "product",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_who_for",
-      "question_summary": "Who is this hearing aid suitable for",
-      "answer_fr": "👴👵 Le G19S est idéal pour:\n• Les **seniors** avec perte auditive légère à modérée\n• Les personnes qui veulent quelque chose de **discret et invisible**\n• Ceux qui cherchent un appareil **rechargeable** (plus pratique qu'une batterie)\n\nIl n'est pas recommandé pour les pertes auditives très sévères.",
-      "answer_ar": "👴👵 السماعة G19S مثالية لـ:\n• **كبار السن** اللي عندهم ضعف سمع بسيط إلى متوسط\n• اللي يبغيو شي **غير ظاهر وغير ملاحَظ**\n• اللي يبحثو على جهاز **قابل للشحن** (أحسن من البطاريات)\n\nما تنصحش بها لضعف السمع الشديد جداً.",
-      "category": "suitability",
+      "id": "faq_common_complaints",
+      "question_summary": "Common hearing aid complaints",
+      "answer_fr": "Les plaintes les plus courantes sont le sifflement, le son brouillé, la batterie faible, l'inconfort, ou un appareil trop visible. Le G19S essaie de répondre à ces points avec un format discret, rechargeable, simple à utiliser et avec réduction du bruit.",
+      "answer_ar": "أكثر الشكاوي تكون: الصفير في الودن، الصوت مشوش، البطارية تفرغ، السماعة توجع، ولا تبان بزاف. جي 19 إس جاية صغيرة، قابلة للشحن، سهلة الاستعمال، وفيها تقليل الضوضاء.",
+      "category": "market",
       "confidence": "high",
       "source": "admin"
     },
     {
-      "id": "faq_frequency",
-      "question_summary": "Frequency range / technical specs",
-      "answer_fr": "🔊 Spécifications techniques du G19S:\n• Plage de fréquences: **300 – 3500 Hz**\n• Gain max: **32 dB**\n• Bruit d'entrée équivalent: **≤25 dB**\n• Distorsion: **≤3%** (excellente qualité sonore)",
-      "answer_ar": "🔊 المواصفات التقنية للـG19S:\n• نطاق التردد: **300 – 3500 Hz**\n• الكسب الأقصى: **32 ديسيبل**\n• ضوضاء الإدخال: **≤25 ديسيبل**\n• التشويه: **≤3%** (جودة صوت ممتازة)",
-      "category": "specs",
+      "id": "faq_family_decision",
+      "question_summary": "Family health purchase decision",
+      "answer_fr": "En Algérie, les achats santé pour les parents âgés se décident souvent en famille. Le fils ou la fille pose les questions, compare, puis aide le parent à accepter l'appareil.",
+      "answer_ar": "في الجزائر، كي تكون حاجة صحية للوالد ولا الوالدة، القرار غالبا يكون عائلي. الابن ولا البنت يسقسي، يقارن، ومن بعد يعاون الوالد باش يقبل يستعمل السماعة.",
+      "category": "culture",
       "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_best_messenger_times",
+      "question_summary": "Best Facebook Messenger engagement times",
+      "answer_fr": "Les meilleurs moments à tester sont généralement 12:00 à 14:00, 19:00 à 23:00, jeudi soir et week-end. Les statistiques de la page Facebook doivent confirmer les vrais pics.",
+      "answer_ar": "أحسن أوقات للتجربة غالبا: من 12:00 حتى 14:00، ومن 19:00 حتى 23:00، وزيد مساء الخميس والويكاند. بصح لازم إحصائيات صفحة فيسبوك تأكد الأوقات الحقيقية.",
+      "category": "marketing",
+      "confidence": "medium",
       "source": "admin"
     }
   ],
