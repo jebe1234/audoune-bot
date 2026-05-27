@@ -1,0 +1,162 @@
+{
+  "business": {
+    "name": "Audoune",
+    "name_ar": "أودون للسمعيات",
+    "tagline_fr": "Entendez mieux, vivez mieux",
+    "tagline_ar": "اسمع أحسن، عيش أحسن",
+    "price": 14500,
+    "currency": "DA",
+    "delivery_free": true,
+    "delivery_wilayas": "all 58 wilayas of Algeria",
+    "delivery_time": "24 to 48 hours",
+    "effectiveness_range": "60% to 90% depending on hearing loss level"
+  },
+  "product": {
+    "model": "Great-Ears G19S",
+    "style": "CIC (Completely-In-Canal) — ITE Rechargeable",
+    "description_fr": "Appareil auditif CIC rechargeable, presque invisible dans le canal auditif. Idéal pour une perte auditive légère à modérée. Compact, discret et confortable.",
+    "description_ar": "سماعة طبية CIC قابلة للشحن، تدخل داخل قناة الأذن تماماً وتكاد تكون غير مرئية. مثالية لضعف السمع البسيط إلى المتوسط. صغيرة، مريحة وغير ظاهرة.",
+    "key_features": [
+      "Volume Control Trimmer — تحكم في مستوى الصوت",
+      "On/Off Switch — مفتاح تشغيل وإيقاف",
+      "Magnetic suction charging — شحن مغناطيسي سهل",
+      "Low power consumption — استهلاك منخفض للطاقة",
+      "Small size design — تصميم صغير الحجم",
+      "Noise reduction — تقليل الضوضاء"
+    ],
+    "specs": {
+      "peak_ospl90": "≤129dB+3dB",
+      "haf_ospl90": "≤106dB±4dB",
+      "peak_gain": "≤32dB",
+      "haf_fog_gain": "23dB±5dB",
+      "frequency_range": "300Hz – 3500Hz",
+      "distortion": "≤3% at 500Hz, 800Hz, 1600Hz",
+      "equivalent_input_noise": "≤25dB",
+      "battery": "Built-in Lithium Battery (rechargeable)",
+      "battery_current": "1.5mA",
+      "working_time": "20 hours per charge",
+      "charging_time": "2 hours",
+      "colors": ["Blue", "Red", "Beige"],
+      "material": "ABS",
+      "weight": "1.9g"
+    },
+    "packaging": {
+      "size": "10.7 x 4.6 x 10.7 cm",
+      "gross_weight": "0.17 kg",
+      "type": "Small gift box with master carton"
+    },
+    "certifications": ["ISO13485", "ROHS", "MSDS", "FCC", "FDA", "CE"]
+  },
+  "faqs": [
+    {
+      "id": "faq_price",
+      "question_summary": "Price of the hearing aid",
+      "answer_fr": "Notre appareil auditif Great-Ears G19S est à **14 500 DA**, livraison gratuite incluse partout en Algérie 🇩🇿 Pas de frais cachés.",
+      "answer_ar": "سعر سماعة Great-Ears G19S هو **14,500 دج** شاملة التوصيل المجاني لكل ولايات الجزائر 🇩🇿 بلا أي تكاليف خفية.",
+      "category": "price",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_delivery",
+      "question_summary": "Delivery info — free and time",
+      "answer_fr": "✅ La livraison est **GRATUITE** dans toutes les 58 wilayas d'Algérie 🇩🇿\n⏱️ Délai de livraison: **24 à 48 heures** après confirmation de la commande.",
+      "answer_ar": "✅ التوصيل **مجاني** لكل الـ58 ولاية في الجزائر 🇩🇿\n⏱️ مدة التوصيل: **24 إلى 48 ساعة** بعد تأكيد الطلب.",
+      "category": "delivery",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_effectiveness",
+      "question_summary": "Effectiveness percentage of hearing aid",
+      "answer_fr": "📊 L'efficacité dépend du type de perte auditive:\n• Perte **légère à modérée**: amélioration de **80 à 90%**\n• Perte **sévère**: amélioration de **60 à 75%**\n\nPour vous donner un chiffre précis, pouvez-vous me dire depuis combien de temps vous avez des difficultés à entendre?",
+      "answer_ar": "📊 الفاعلية تتوقف على نوع ضعف السمع:\n• ضعف **بسيط إلى متوسط**: تحسن بين **80 و90%**\n• ضعف **شديد**: تحسن بين **60 و75%**\n\nعلاش تخبرني شوية على حالتك؟ نقدر نعطيك نسبة أدق 🎯",
+      "category": "effectiveness",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_invisible",
+      "question_summary": "Is the hearing aid visible / invisible",
+      "answer_fr": "😊 Oui! Le G19S est un modèle **CIC (Completely-In-Canal)** — il se place entièrement dans le canal auditif. La plupart des gens ne le verront pas du tout! Il pèse seulement **1.9 grammes**.",
+      "answer_ar": "😊 آه! السماعة G19S نوع **CIC** — تدخل بالكامل داخل قناة الأذن. الأغلبية ما يشوفوهاش! وزنها غير **1.9 غرام** فقط.",
+      "category": "design",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_charging",
+      "question_summary": "How to charge / battery life",
+      "answer_fr": "🔋 La batterie dure **20 heures** par charge complète.\n⚡ Temps de charge: seulement **2 heures** via chargeur magnétique (comme un aimant, très simple!).",
+      "answer_ar": "🔋 البطارية تشتغل **20 ساعة** بشحنة واحدة.\n⚡ وقت الشحن: **ساعتين فقط** عبر الشاحن المغناطيسي (كيما مغناطيس، سهل بزاف!).",
+      "category": "battery",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_noise",
+      "question_summary": "Noise reduction / sound quality",
+      "answer_fr": "🎵 Oui, le G19S intègre un système de **réduction du bruit** et couvre une plage de fréquences de **300 à 3500 Hz** — parfait pour entendre les conversations normales avec clarté.",
+      "answer_ar": "🎵 آه، السماعة G19S فيها نظام **تقليل الضوضاء** وتغطي ترددات من **300 إلى 3500 Hz** — ممتاز للمحادثات العادية بوضوح.",
+      "category": "sound_quality",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_colors",
+      "question_summary": "Available colors",
+      "answer_fr": "🎨 Le G19S est disponible en 3 couleurs: **Bleu, Rouge et Beige**. La couleur beige est la plus discrète et la plus populaire.",
+      "answer_ar": "🎨 السماعة G19S متوفرة بـ3 ألوان: **أزرق، أحمر، وبيج**. اللون البيج هو الأكثر طلباً لأنه أقل ظهوراً.",
+      "category": "design",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_payment",
+      "question_summary": "Payment method",
+      "answer_fr": "💳 Vous payez **à la livraison** (contre remboursement) — pas besoin de payer en ligne. Le livreur encaisse le paiement quand vous recevez votre colis.",
+      "answer_ar": "💳 الدفع يكون **عند التوصيل** — ماشي حاجة تدفع أونلاين. الساعي يجيب الطرد وتدفع وقتها.",
+      "category": "payment",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_order",
+      "question_summary": "How to order",
+      "answer_fr": "🛒 Pour commander, j'ai besoin de:\n1. Votre **nom complet**\n2. Votre **numéro de téléphone**\n3. Votre **wilaya**\n\nDonnez-moi ces infos et on s'occupe de tout! 🚀",
+      "answer_ar": "🛒 باش تطلب، محتاج:\n1. **اسمك الكامل**\n2. **رقم هاتفك**\n3. **ولايتك**\n\nعطيني هاد المعلومات ونحن نديرو كلشي! 🚀",
+      "category": "order",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_return",
+      "question_summary": "Return or warranty policy",
+      "answer_fr": "🛡️ Notre produit est certifié ISO13485, CE, FCC et FDA — des certifications médicales internationales garantissant la qualité. Pour toute question après achat, notre équipe est disponible.",
+      "answer_ar": "🛡️ منتجنا معتمد بشهادات دولية: ISO13485، CE، FCC وFDA — ضمانات طبية دولية على الجودة. لأي سؤال بعد الشراء، فريقنا متاح.",
+      "category": "warranty",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_who_for",
+      "question_summary": "Who is this hearing aid suitable for",
+      "answer_fr": "👴👵 Le G19S est idéal pour:\n• Les **seniors** avec perte auditive légère à modérée\n• Les personnes qui veulent quelque chose de **discret et invisible**\n• Ceux qui cherchent un appareil **rechargeable** (plus pratique qu'une batterie)\n\nIl n'est pas recommandé pour les pertes auditives très sévères.",
+      "answer_ar": "👴👵 السماعة G19S مثالية لـ:\n• **كبار السن** اللي عندهم ضعف سمع بسيط إلى متوسط\n• اللي يبغيو شي **غير ظاهر وغير ملاحَظ**\n• اللي يبحثو على جهاز **قابل للشحن** (أحسن من البطاريات)\n\nما تنصحش بها لضعف السمع الشديد جداً.",
+      "category": "suitability",
+      "confidence": "high",
+      "source": "admin"
+    },
+    {
+      "id": "faq_frequency",
+      "question_summary": "Frequency range / technical specs",
+      "answer_fr": "🔊 Spécifications techniques du G19S:\n• Plage de fréquences: **300 – 3500 Hz**\n• Gain max: **32 dB**\n• Bruit d'entrée équivalent: **≤25 dB**\n• Distorsion: **≤3%** (excellente qualité sonore)",
+      "answer_ar": "🔊 المواصفات التقنية للـG19S:\n• نطاق التردد: **300 – 3500 Hz**\n• الكسب الأقصى: **32 ديسيبل**\n• ضوضاء الإدخال: **≤25 ديسيبل**\n• التشويه: **≤3%** (جودة صوت ممتازة)",
+      "category": "specs",
+      "confidence": "high",
+      "source": "admin"
+    }
+  ],
+  "pending_facts": [],
+  "learned_facts": []
+}
