@@ -5,6 +5,34 @@ const { handleMessage, handlePostback } = require('./bot/hamza');
 const app = express();
 app.use(express.json());
 
+const processedEvents = new Map();
+const EVENT_TTL_MS = 10 * 60 * 1000;
+
+function getEventId(event) {
+  if (event.message?.mid) return `message:${event.message.mid}`;
+  if (event.postback?.mid) return `postback:${event.postback.mid}`;
+  if (event.postback?.payload) {
+    return `postback:${event.sender?.id}:${event.timestamp}:${event.postback.payload}`;
+  }
+  return `${event.sender?.id || 'unknown'}:${event.timestamp || Date.now()}`;
+}
+
+function alreadyProcessed(event) {
+  const now = Date.now();
+  for (const [id, timestamp] of processedEvents) {
+    if (now - timestamp > EVENT_TTL_MS) processedEvents.delete(id);
+  }
+
+  const eventId = getEventId(event);
+  if (processedEvents.has(eventId)) {
+    console.log('Duplicate Messenger event ignored:', eventId);
+    return true;
+  }
+
+  processedEvents.set(eventId, now);
+  return false;
+}
+
 // ─── Facebook Webhook Verification ────────────────────────────────────────────
 app.get('/webhook', (req, res) => {
   const mode      = req.query['hub.mode'];
@@ -32,6 +60,8 @@ app.post('/webhook', async (req, res) => {
     const events = entry.messaging || [];
     for (const event of events) {
       try {
+        if (alreadyProcessed(event)) continue;
+
         if (event.message && !event.message.is_echo) {
           await handleMessage(event.sender.id, event.message);
         } else if (event.postback) {
@@ -148,4 +178,3 @@ app.listen(PORT, () => {
     }
   }, 14 * 60 * 1000); // every 14 minutes
 });
-
