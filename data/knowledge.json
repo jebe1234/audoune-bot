@@ -79,7 +79,7 @@
       "Do not negotiate the price.",
       "Mention free delivery to all 58 wilayas.",
       "Mention payment on delivery early when the customer shows fear or hesitation.",
-      "Collect full name, phone number, and wilaya when ordering."
+      "Collect name, phone number, and wilaya when ordering. Do not require the full name."
     ]
   },
   "market_context": {
@@ -312,8 +312,8 @@
     {
       "id": "faq_order",
       "question_summary": "How to order",
-      "answer_fr": "Pour commander, envoyez votre nom complet, numéro de téléphone, et wilaya. La livraison est gratuite et vous payez à la livraison.",
-      "answer_ar": "باش تطلب، ابعثلي اسمك الكامل، رقم الهاتف، والولاية. التوصيل مجاني وتخلص كي توصلك.",
+      "answer_fr": "Pour commander, envoyez votre nom, numéro de téléphone, et wilaya. La livraison est gratuite et vous payez à la livraison.",
+      "answer_ar": "باش تطلب، ابعثلي الاسم، رقم الهاتف، والولاية. التوصيل مجاني وتخلص كي توصلك.",
       "category": "order",
       "confidence": "high",
       "source": "admin"

@@ -26,6 +26,22 @@ async function sendText(recipientId, text) {
   }
 }
 
+// ─── Send image attachment ────────────────────────────────────────────────────
+async function sendImage(recipientId, imageUrl) {
+  await callSendAPI({
+    recipient: { id: recipientId },
+    message: {
+      attachment: {
+        type: 'image',
+        payload: {
+          url: imageUrl,
+          is_reusable: true,
+        },
+      },
+    },
+  });
+}
+
 // ─── Typing indicators ─────────────────────────────────────────────────────────
 async function sendTypingOn(recipientId) {
   await callSendAPI({
@@ -85,6 +101,7 @@ function splitMessage(text, maxLen) {
 
 module.exports = {
   sendText,
+  sendImage,
   sendTypingOn,
   sendTypingOff,
   sendQuickReplies,

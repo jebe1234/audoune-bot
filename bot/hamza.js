@@ -1,5 +1,6 @@
 const {
   sendText,
+  sendImage,
   sendTypingOn,
   sendTypingOff,
   sendQuickReplies,
@@ -37,6 +38,10 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isPhotoRequest(text) {
+  return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها)/i.test(text);
+}
+
 // ─── Handle incoming text messages ────────────────────────────────────────────
 async function handleMessage(senderId, message) {
   const text = (message.text || '').trim();
@@ -58,6 +63,34 @@ async function handleMessage(senderId, message) {
         ? `Yaseen est quelqu'un de l'équipe.`
         : `ياسين واحد من الفريق.`
     );
+    return;
+  }
+
+  if (isPhotoRequest(text)) {
+    const session = getSession(senderId);
+    const lang = session.language || detectLanguage(text);
+    const photoUrl = process.env.PRODUCT_PHOTO_URL;
+
+    await sendTypingOn(senderId);
+    await delay(500);
+    await sendTypingOff(senderId);
+
+    addToHistory(session, 'user', text);
+
+    if (photoUrl) {
+      await sendImage(senderId, photoUrl);
+      const msg = lang === 'fr'
+        ? 'Voici la photo du produit. Le prix est 14500 DA, livraison gratuite.'
+        : 'هذه صورة المنتج. السومة 14500 دج والتوصيل مجاني.';
+      await sendText(senderId, msg);
+      addToHistory(session, 'assistant', msg);
+    } else {
+      const msg = lang === 'fr'
+        ? "La photo n'est pas encore configurée. Je peux quand même vous donner les détails du produit."
+        : "الصورة ما راهيش مبرمجة دروك. نقدر نعطيك تفاصيل المنتج.";
+      await sendText(senderId, msg);
+      addToHistory(session, 'assistant', msg);
+    }
     return;
   }
 
@@ -205,8 +238,8 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est à 14500 DA. Le prix est fixe, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom complet, numéro de téléphone et wilaya. Paiement à la livraison, délai 24-48h.`,
-      dz: `السماعة جريت إيرز جي 19 إس بسومة ثابتة: 14500 دج. التوصيل مجاني لكل 58 ولاية.\n\nباش تطلب، ابعث الاسم الكامل، رقم الهاتف، والولاية. الدفع كي توصلك، والمدة 24-48 ساعة.`,
+      fr: `Le Great-Ears G19S est à 14500 DA. Le prix est fixe, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numéro de téléphone et wilaya. Paiement à la livraison, délai 24-48h.`,
+      dz: `السماعة جريت إيرز جي 19 إس بسومة ثابتة: 14500 دج. التوصيل مجاني لكل 58 ولاية.\n\nباش تطلب، ابعث الاسم، رقم الهاتف، والولاية. الدفع كي توصلك، والمدة 24-48 ساعة.`,
     },
     DELIVERY: {
       fr: `La livraison est gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures après confirmation. Le paiement se fait à la livraison.`,
