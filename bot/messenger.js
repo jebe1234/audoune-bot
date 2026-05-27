@@ -42,6 +42,29 @@ async function sendImage(recipientId, imageUrl) {
   });
 }
 
+// ─── Send phone call button ───────────────────────────────────────────────────
+async function sendCallButton(recipientId, text, phoneNumber, title = 'Call') {
+  await callSendAPI({
+    recipient: { id: recipientId },
+    message: {
+      attachment: {
+        type: 'template',
+        payload: {
+          template_type: 'button',
+          text,
+          buttons: [
+            {
+              type: 'phone_number',
+              title,
+              payload: phoneNumber,
+            },
+          ],
+        },
+      },
+    },
+  });
+}
+
 // ─── Typing indicators ─────────────────────────────────────────────────────────
 async function sendTypingOn(recipientId) {
   await callSendAPI({
@@ -102,6 +125,7 @@ function splitMessage(text, maxLen) {
 module.exports = {
   sendText,
   sendImage,
+  sendCallButton,
   sendTypingOn,
   sendTypingOff,
   sendQuickReplies,

@@ -1,6 +1,7 @@
 const {
   sendText,
   sendImage,
+  sendCallButton,
   sendTypingOn,
   sendTypingOff,
   getUserProfile,
@@ -45,6 +46,27 @@ function isPhotoRequest(text) {
   return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها)/i.test(text);
 }
 
+function isPhoneRequest(text) {
+  return /(phone|number|call|tel|t[eé]l[eé]phone|num[eé]ro|appel|appeler|رقم|نمر[او]?|تليفون|هاتف|عيط|نتصل|اتصل|نكلم|كول)/i.test(text);
+}
+
+function hasAudioAttachment(message) {
+  return (message.attachments || []).some((attachment) => attachment.type === 'audio');
+}
+
+function getPhoneHandoffMessage(lang) {
+  return lang === 'fr'
+    ? 'Vous pouvez appeler ce numéro: +213563746369'
+    : 'تقدر تعيط لهذا الرقم: +213563746369';
+}
+
+async function sendPhoneHandoff(recipientId, lang) {
+  const phone = '+213563746369';
+  const text = getPhoneHandoffMessage(lang);
+  const title = lang === 'fr' ? 'Appeler' : 'اتصل الآن';
+  await sendCallButton(recipientId, text, phone, title);
+}
+
 function isBushraTrigger(text) {
   const hasBushra = /bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text);
   const asksWho = /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text);
@@ -85,6 +107,17 @@ function getBushraLoveMessage(session) {
 // ─── Handle incoming text messages ────────────────────────────────────────────
 async function handleMessage(senderId, message) {
   const text = (message.text || '').trim();
+  const session = getSession(senderId);
+
+  if (!text && hasAudioAttachment(message)) {
+    const lang = session.language || 'dz';
+    const msg = getPhoneHandoffMessage(lang);
+    await sendPhoneHandoff(senderId, lang);
+    addToHistory(session, 'user', '[audio]');
+    addToHistory(session, 'assistant', msg);
+    return;
+  }
+
   if (!text) return;
 
   // ── Admin command handling ───────────────────────────────────────────
@@ -108,7 +141,6 @@ async function handleMessage(senderId, message) {
 
   // ── Easter egg: Bushra ───────────────────────────────────────────────
   if (isBushraTrigger(text)) {
-    const session = getSession(senderId);
     session.bushraMode = true;
     session.bushraLoveCount = 0;
 
@@ -128,8 +160,6 @@ async function handleMessage(senderId, message) {
     await sendText(senderId, msg);
     return;
   }
-
-  const session = getSession(senderId);
 
   if (session.bushraMode) {
     const msg = getBushraLoveMessage(session);
@@ -169,6 +199,15 @@ async function handleMessage(senderId, message) {
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     }
+    return;
+  }
+
+  if (isPhoneRequest(text)) {
+    const lang = session.language || detectLanguage(text);
+    const msg = getPhoneHandoffMessage(lang);
+    await sendPhoneHandoff(senderId, lang);
+    addToHistory(session, 'user', text);
+    addToHistory(session, 'assistant', msg);
     return;
   }
 
@@ -219,7 +258,12 @@ async function handleMessage(senderId, message) {
   await sendTypingOff(senderId);
 
   // ── Send the response ────────────────────────────────────────────────
-  await sendText(senderId, aiResult.message);
+  if (aiResult.needs_admin || aiResult.confidence === 'low') {
+    aiResult.message = getPhoneHandoffMessage(session.language || 'dz');
+    await sendPhoneHandoff(senderId, session.language || 'dz');
+  } else {
+    await sendText(senderId, aiResult.message);
+  }
   addToHistory(session, 'assistant', aiResult.message);
 
   // ── Handle order collection ──────────────────────────────────────────

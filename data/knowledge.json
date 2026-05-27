@@ -12,6 +12,7 @@
     "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
     "payment": "Cash on delivery only",
+    "phone": "+213563746369",
     "effectiveness_range": "Usable for reported hearing levels from 10% to 100%; helps amplify sound and make speech clearer with clean sound and reduced noise",
     "age_range": "10 to 90 years old",
     "arabic_digit_rule": "Use Western digits only: 0 1 2 3 4 5 6 7 8 9. Never use Arabic-Indic digits."
@@ -92,6 +93,8 @@
       "Do not say fixed price, no discount, or no negotiation to the customer.",
       "If the customer strongly insists after hearing the normal price, you may quietly offer 14000 DA once.",
       "Do not advertise the 14000 DA discount before the customer insists.",
+      "If the customer asks for phone number or wants to call, give +213563746369.",
+      "If the customer sends a voice/audio message or the message is unclear, tell them to call +213563746369.",
       "Mention free delivery to all 58 wilayas.",
       "Mention payment on delivery early when the customer shows fear or hesitation.",
       "Collect name, phone number, and wilaya when ordering. Do not require the full name."
