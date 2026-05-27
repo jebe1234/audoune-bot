@@ -81,6 +81,25 @@ async function handleMessage(senderId, message) {
     return;
   }
 
+  // ── Easter egg: Bushra ───────────────────────────────────────────────
+  if (/bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text) && /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text)) {
+    const msg = [
+      'بحميتي نحبك بززاف يالعمريك يالسكرر تعي',
+      '',
+      'بشرى هي القلب الحنين والضحكة اللي تهون الدنيا.',
+      'هي الإنسانة اللي وجودها يخلي كل نهار أحسن من اللي قبلو.',
+      'ربي يخليها ليا، ويحفظها، ويزيد بيناتنا المحبة والستر.',
+      '',
+      'يا بشرى، نحبك على قلبك، على صبرك، على ضحكتك، وعلى كل حاجة فيك.',
+    ].join('\n');
+
+    await sendTypingOn(senderId);
+    await delay(1000);
+    await sendTypingOff(senderId);
+    await sendText(senderId, msg);
+    return;
+  }
+
   if (isPhotoRequest(text)) {
     const session = getSession(senderId);
     const lang = session.language || detectLanguage(text);
