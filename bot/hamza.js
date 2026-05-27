@@ -158,8 +158,8 @@ async function handleMessage(senderId, message) {
         await delay(300);
       }
       const msg = lang === 'fr'
-        ? 'Voici les photos du produit. Le prix est 14500 DA, livraison gratuite.'
-        : 'هذو صور المنتج. السومة 14500 دج والتوصيل مجاني.';
+        ? 'Voici les photos du produit.'
+        : 'هذو صور المنتج.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     } else {
@@ -294,8 +294,8 @@ async function handlePostback(senderId, postback) {
       dz: `الشخص يسمع كيفاش: مليح، متوسط، ولا ناقص بزاف؟`,
     },
     PRODUCT: {
-      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, réduction du bruit, couleurs bleu, rouge ou beige. Prix fixe: 14500 DA avec livraison gratuite.`,
-      dz: `جريت إيرز جي 19 إس سماعة قابلة للشحن تدخل داخل الودن.\n\nتخدم حوالي 20 ساعة، تشحن في حوالي 2 ساعات، فيها تقليل الضوضاء، والألوان أزرق، أحمر، بيج. السومة ثابتة: 14500 دج والتوصيل مجاني.`,
+      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, réduction du bruit, son propre, couleurs bleu, rouge ou beige.`,
+      dz: `جريت إيرز جي 19 إس سماعة قابلة للشحن تدخل داخل الودن.\n\nتخدم حوالي 20 ساعة، تشحن في حوالي 2 ساعات، فيها تقليل الضوضاء وصوت صافي، والألوان أزرق، أحمر، بيج.`,
     },
   };
 

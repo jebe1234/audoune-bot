@@ -11,7 +11,7 @@
     "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
     "payment": "Cash on delivery only",
-    "effectiveness_range": "Usable for reported hearing levels from 10% to 100%; helps amplify sound and make speech clearer",
+    "effectiveness_range": "Usable for reported hearing levels from 10% to 100%; helps amplify sound and make speech clearer with clean sound and reduced noise",
     "age_range": "10 to 90 years old",
     "arabic_digit_rule": "Use Western digits only: 0 1 2 3 4 5 6 7 8 9. Never use Arabic-Indic digits."
   },
@@ -28,7 +28,8 @@
       "Magnetic charging",
       "Low power consumption",
       "Small in-canal design",
-      "Noise reduction"
+      "Noise reduction",
+      "Clean sound without annoying fizzing"
     ],
     "key_features_ar": [
       "تتحكم في مستوى الصوت",
@@ -36,7 +37,8 @@
       "شحن مغناطيسي ساهل",
       "استهلاك قليل للطاقة",
       "تصميم صغير يدخل داخل الودن",
-      "تقليل الضوضاء"
+      "تقليل الضوضاء",
+      "صوت صافي بلا تشويش مزعج"
     ],
     "specs": {
       "working_time": "20 hours per charge",
@@ -72,9 +74,13 @@
       "Never say the product cures hearing loss.",
       "Say it helps hearing and makes speech clearer.",
       "Say it can help people who report hearing from 10% to 100%.",
-      "If the customer says they hear 10%, continue selling and explain that the device amplifies sound and can make speech clearer.",
+      "If the customer says they hear 10%, explain that the device amplifies sound and can make speech clearer, then ask one short follow-up question.",
       "Do not tell the customer to go to a doctor in the sales conversation.",
       "Do not guarantee exact percentages of improvement.",
+      "Do not rush directly to order collection after the customer shares a hearing condition.",
+      "Collect order details only after the customer clearly wants to order.",
+      "Do not mention price in every reply. Mention 14500 DA only when asked or when order/price topic comes up first.",
+      "After price has been mentioned once, do not repeat it unless the customer asks again.",
       "Ask simple hearing intake questions before recommending the product.",
       "If the customer says explain like I am 5, treat it as a simplicity request, not the patient's age.",
       "The product is suitable for people from 10 to 90 years old when the hearing problem matches mild to moderate hearing loss.",
@@ -127,13 +133,13 @@
       "النقص جا بالشوية مع الوقت"
     ],
     "hearing_percentage_rule": [
-      "10% hearing: still sellable",
-      "20% hearing: still sellable",
-      "30% hearing: still sellable",
-      "40% hearing: still sellable",
-      "50% to 100% hearing: still sellable"
+      "10% hearing: product conversation stays open; ask one short follow-up",
+      "20% hearing: product conversation stays open; ask one short follow-up",
+      "30% hearing: product conversation stays open; ask one short follow-up",
+      "40% hearing: product conversation stays open; ask one short follow-up",
+      "50% to 100% hearing: product conversation stays open; ask one short follow-up"
     ],
-    "style_rule": "Ask one short question at a time. Use simple levels: good, medium, bad, or 10% to 100%. Do not tell the customer to go to a doctor. Avoid long medical paragraphs."
+    "style_rule": "Ask one short question at a time. Use simple levels: good, medium, bad, or 10% to 100%. Do not tell the customer to go to a doctor. Do not rush to order. Avoid long medical paragraphs."
   },
   "market_context": {
     "competing_brands": [
@@ -267,7 +273,7 @@
       "id": "faq_price",
       "question_summary": "Price and fixed price",
       "answer_fr": "Le prix du Great-Ears G19S est fixe: 14500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait uniquement à la livraison.",
-      "answer_ar": "السومة ثابتة خويا: 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون غير كي توصلك السماعة.",
+      "answer_ar": "السومة ثابتة: 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون غير كي توصلك السماعة.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
@@ -294,7 +300,7 @@
       "id": "faq_suitability",
       "question_summary": "Who the product is suitable for",
       "answer_fr": "Le G19S aide surtout les personnes avec une perte auditive légère à modérée. Si la personne n'entend rien du tout, ou s'il y a douleur, infection, vertige ou écoulement, il faut consulter un spécialiste.",
-      "answer_ar": "السماعة تقدر تعاون حتى كي يكون السمع ناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الكلام يبان أوضح.",
+      "answer_ar": "السماعة تقدر تعاون حتى كي يكون السمع ناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الكلام يبان أوضح، والصوت تاعها صافي بلا تشويش مزعج. يسمع الأصوات شوية ولا غير يحس بالحركة؟",
       "category": "suitability",
       "confidence": "high",
       "source": "admin"
@@ -311,8 +317,8 @@
     {
       "id": "faq_hearing_red_flags",
       "question_summary": "Very weak hearing percentage",
-      "answer_fr": "Même si la personne entend seulement 10%, le G19S peut aider à amplifier les sons et rendre les paroles plus claires. Le prix est 14500 DA, livraison gratuite, paiement à la livraison.",
-      "answer_ar": "حتى إذا يسمع غير 10%، جي 19 إس تقدر تعاون باش تكبر الصوت وتخلي الهدرة تبان أوضح. السومة 14500 دج، التوصيل مجاني، والدفع كي توصلك.",
+      "answer_fr": "Même si la personne entend seulement 10%, le G19S peut aider à amplifier les sons et rendre les paroles plus claires. Le son est propre, sans grésillement gênant. Elle entend un peu les voix ou seulement des sons?",
+      "answer_ar": "حتى إذا يسمع غير 10%، جي 19 إس تقدر تعاون باش تكبر الصوت وتخلي الهدرة تبان أوضح. الصوت صافي بلا تشويش مزعج. يسمع شوية الهدرة ولا غير الأصوات؟",
       "category": "medical_safety",
       "confidence": "high",
       "source": "admin"
@@ -321,7 +327,7 @@
       "id": "faq_elderly_parent",
       "question_summary": "Elderly parent suitability",
       "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser. Pour une perte très forte ou un problème médical de l'oreille, mieux vaut consulter un spécialiste.",
-      "answer_ar": "ربي يحفظو ويطول في عمرو. حتى إذا السمع ناقص بزاف، من 10% وطالع، السماعة تقدر تعاونو تكبر الصوت وتوضح الهدرة. السومة 14500 دج والتوصيل مجاني.",
+      "answer_ar": "ربي يحفظو ويطول في عمرو. حتى إذا السمع ناقص بزاف، من 10% وطالع، السماعة تقدر تعاونو تكبر الصوت وتوضح الهدرة. يسمع شوية كي تهدرو معاه ولا غير الأصوات؟",
       "category": "suitability",
       "confidence": "high",
       "source": "admin"
@@ -339,7 +345,7 @@
       "id": "faq_too_expensive",
       "question_summary": "Objection: too expensive",
       "answer_fr": "Je comprends. Le prix est fixe à 14500 DA, mais il inclut la livraison gratuite, un appareil rechargeable, discret, et le paiement à la livraison. Vous ne payez rien avant réception.",
-      "answer_ar": "صح، نفهمك خويا. بصح هادي قابلة للشحن وما تحتاجش تبدل البطاريات كل مرة، صغيرة وتدخل داخل الودن، والتوصيل مجاني حتى لباب الدار في 58 ولاية. السومة ثابتة 14500 دج، وتخلص غير كي توصلك وتشوفها.",
+      "answer_ar": "نفهمك. هادي قابلة للشحن وما تحتاجش تبدل البطاريات كل مرة، صغيرة وتدخل داخل الودن، والتوصيل مجاني حتى لباب الدار في 58 ولاية. وتخلص غير كي توصلك وتشوفها.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
