@@ -286,7 +286,7 @@ async function handleMessage(senderId, message) {
   await sendTypingOff(senderId);
 
   // ── Send the response ────────────────────────────────────────────────
-  if (aiResult.needs_admin || aiResult.confidence === 'low') {
+  if (aiResult.needs_admin && !aiResult.message) {
     aiResult.message = getPhoneHandoffMessage(session.language || 'dz');
     await sendPhoneHandoff(senderId, session.language || 'dz');
   } else {
