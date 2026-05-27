@@ -65,6 +65,18 @@ function getPhoneHandoffMessage(lang) {
     : 'تقدر تعيطلي هنا: +213563746369';
 }
 
+function getClarifyMessage(lang, isAudio = false) {
+  if (lang === 'fr') {
+    return isAudio
+      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou écrivez-moi juste votre question."
+      : "Je n'ai pas bien compris. Vous pouvez me le dire autrement?";
+  }
+
+  return isAudio
+    ? 'ما فهمتش الصوت مليح. عاود ابعثه واضح شوية، ولا اكتبلي السؤال برك.'
+    : 'ما فهمتش مليح. تقدر تعاودها بطريقة أخرى؟';
+}
+
 async function sendPhoneHandoff(recipientId, lang) {
   const phone = '+213563746369';
   const text = getPhoneHandoffMessage(lang);
@@ -77,11 +89,32 @@ async function transcribeMessengerAudio(message) {
   const audioUrl = audio?.payload?.url;
   if (!audioUrl) return '';
 
-  const res = await axios.get(audioUrl, {
+  const requestOptions = {
     responseType: 'arraybuffer',
     timeout: 30000,
-  });
+    headers: { Accept: 'audio/*,*/*' },
+  };
+
+  let res;
+  try {
+    res = await axios.get(audioUrl, requestOptions);
+  } catch (err) {
+    if (!process.env.PAGE_ACCESS_TOKEN) throw err;
+    res = await axios.get(audioUrl, {
+      ...requestOptions,
+      params: { access_token: process.env.PAGE_ACCESS_TOKEN },
+      headers: {
+        ...requestOptions.headers,
+        Authorization: `Bearer ${process.env.PAGE_ACCESS_TOKEN}`,
+      },
+    });
+  }
+
   const mimeType = String(res.headers['content-type'] || 'audio/mpeg').split(';')[0];
+  if (/json|html|text/i.test(mimeType)) {
+    throw new Error(`Messenger audio URL returned ${mimeType}`);
+  }
+
   return transcribeAudio(Buffer.from(res.data), mimeType);
 }
 
@@ -138,8 +171,8 @@ async function handleMessage(senderId, message) {
     await sendTypingOff(senderId);
 
     if (!text) {
-      const msg = getPhoneHandoffMessage(lang);
-      await sendPhoneHandoff(senderId, lang);
+      const msg = getClarifyMessage(lang, true);
+      await sendText(senderId, msg);
       addToHistory(session, 'user', '[audio]');
       addToHistory(session, 'assistant', msg);
       return;
@@ -287,8 +320,8 @@ async function handleMessage(senderId, message) {
 
   // ── Send the response ────────────────────────────────────────────────
   if (aiResult.needs_admin && !aiResult.message) {
-    aiResult.message = getPhoneHandoffMessage(session.language || 'dz');
-    await sendPhoneHandoff(senderId, session.language || 'dz');
+    aiResult.message = getClarifyMessage(session.language || 'dz');
+    await sendText(senderId, aiResult.message);
   } else {
     await sendText(senderId, aiResult.message);
   }
