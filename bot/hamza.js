@@ -6,6 +6,8 @@ const {
   sendQuickReplies,
   getUserProfile,
 } = require('./messenger');
+const fs                                      = require('fs');
+const path                                    = require('path');
 const { generateResponse }                    = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
@@ -42,6 +44,19 @@ function isPhotoRequest(text) {
   return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها)/i.test(text);
 }
 
+function getProductPhotoUrls() {
+  const manifestPath = path.join(__dirname, '../data/G19S.json');
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const urls = (manifest.photos || []).map((photo) => photo.url).filter(Boolean);
+    if (urls.length) return urls;
+  } catch (err) {
+    console.warn('Could not load G19S photo manifest:', err.message);
+  }
+
+  return process.env.PRODUCT_PHOTO_URL ? [process.env.PRODUCT_PHOTO_URL] : [];
+}
+
 // ─── Handle incoming text messages ────────────────────────────────────────────
 async function handleMessage(senderId, message) {
   const text = (message.text || '').trim();
@@ -69,7 +84,7 @@ async function handleMessage(senderId, message) {
   if (isPhotoRequest(text)) {
     const session = getSession(senderId);
     const lang = session.language || detectLanguage(text);
-    const photoUrl = process.env.PRODUCT_PHOTO_URL;
+    const photoUrls = getProductPhotoUrls();
 
     await sendTypingOn(senderId);
     await delay(500);
@@ -77,11 +92,14 @@ async function handleMessage(senderId, message) {
 
     addToHistory(session, 'user', text);
 
-    if (photoUrl) {
-      await sendImage(senderId, photoUrl);
+    if (photoUrls.length) {
+      for (const photoUrl of photoUrls) {
+        await sendImage(senderId, photoUrl);
+        await delay(300);
+      }
       const msg = lang === 'fr'
-        ? 'Voici la photo du produit. Le prix est 14500 DA, livraison gratuite.'
-        : 'هذه صورة المنتج. السومة 14500 دج والتوصيل مجاني.';
+        ? 'Voici les photos du produit. Le prix est 14500 DA, livraison gratuite.'
+        : 'هذو صور المنتج. السومة 14500 دج والتوصيل مجاني.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     } else {
