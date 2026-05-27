@@ -56,8 +56,8 @@ function hasAudioAttachment(message) {
 
 function getPhoneHandoffMessage(lang) {
   return lang === 'fr'
-    ? 'Vous pouvez appeler ce numéro: +213563746369'
-    : 'تقدر تعيط لهذا الرقم: +213563746369';
+    ? 'Vous pouvez m’appeler ici: +213563746369'
+    : 'تقدر تعيطلي هنا: +213563746369';
 }
 
 async function sendPhoneHandoff(recipientId, lang) {
