@@ -90,6 +90,43 @@ app.get('/', (req, res) => {
   res.json({ status: 'online', bot: 'Hamza 🎧', business: 'Audoune' });
 });
 
+// ─── Diagnostic (masked) ───────────────────────────────────────────────────────
+app.get('/diag', async (req, res) => {
+  const mask = (v) => v ? v.substring(0, 6) + '...' : 'MISSING ❌';
+  const status = {
+    PAGE_ACCESS_TOKEN: mask(process.env.PAGE_ACCESS_TOKEN),
+    GOOGLE_API_KEY:    mask(process.env.GOOGLE_API_KEY),
+    VERIFY_TOKEN:      mask(process.env.VERIFY_TOKEN),
+    ADMIN_PSID:        process.env.ADMIN_PSID || 'MISSING',
+    PORT:              process.env.PORT || '3000',
+  };
+
+  // Quick Gemini test
+  try {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+    await model.generateContent('Say OK');
+    status.GEMINI_TEST = 'PASS ✅';
+  } catch(e) {
+    status.GEMINI_TEST = 'FAIL ❌ ' + e.message.substring(0, 60);
+  }
+
+  // Quick Facebook Send API test (typing indicator — no visible message)
+  try {
+    const axios = require('axios');
+    await axios.post('https://graph.facebook.com/v19.0/me/messages',
+      { recipient: { id: '28069966095939197' }, sender_action: 'typing_on' },
+      { params: { access_token: process.env.PAGE_ACCESS_TOKEN } }
+    );
+    status.FACEBOOK_SEND_API = 'PASS ✅';
+  } catch(e) {
+    status.FACEBOOK_SEND_API = 'FAIL ❌ ' + (e.response?.data?.error?.message || e.message).substring(0, 60);
+  }
+
+  res.json(status);
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'online', bot: 'Hamza 🎧', uptime: Math.floor(process.uptime()) + 's' });
 });
