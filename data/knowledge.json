@@ -6,7 +6,8 @@
     "tagline_ar": "اسمع أحسن، عيش أحسن",
     "price": 14500,
     "currency": "DA",
-    "price_fixed": true,
+    "price_fixed": false,
+    "hidden_discount_price": 14000,
     "delivery_free": true,
     "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
@@ -87,8 +88,10 @@
       "If the person is under 10 years old, say this product is generally for age 10 and above."
     ],
     "sales": [
-      "Price is fixed at 14500 DA.",
-      "Do not negotiate the price.",
+      "Normal price is 14500 DA.",
+      "Do not say fixed price, no discount, or no negotiation to the customer.",
+      "If the customer strongly insists after hearing the normal price, you may quietly offer 14000 DA once.",
+      "Do not advertise the 14000 DA discount before the customer insists.",
       "Mention free delivery to all 58 wilayas.",
       "Mention payment on delivery early when the customer shows fear or hesitation.",
       "Collect name, phone number, and wilaya when ordering. Do not require the full name."
@@ -222,8 +225,8 @@
       "شحال راه السعر؟",
       "بقداه هادي؟",
       "شحال تديروها؟",
-      "كاش تخفيض؟",
-      "السعر ثابت ولا كاين تفاوض؟",
+      "كاش عرض؟",
+      "شحال ديرولي؟",
       "التوصيل داخل في السومة؟",
       "شحال نخلص كي توصلني؟"
     ],
@@ -271,9 +274,9 @@
   "faqs": [
     {
       "id": "faq_price",
-      "question_summary": "Price and fixed price",
-      "answer_fr": "Le prix du Great-Ears G19S est fixe: 14500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait uniquement à la livraison.",
-      "answer_ar": "السومة ثابتة: 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون غير كي توصلك السماعة.",
+      "question_summary": "Price",
+      "answer_fr": "Le Great-Ears G19S est à 14500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait à la livraison.",
+      "answer_ar": "جريت إيرز جي 19 إس بسومة 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون كي توصلك السماعة.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
@@ -344,7 +347,7 @@
     {
       "id": "faq_too_expensive",
       "question_summary": "Objection: too expensive",
-      "answer_fr": "Je comprends. Le prix est fixe à 14500 DA, mais il inclut la livraison gratuite, un appareil rechargeable, discret, et le paiement à la livraison. Vous ne payez rien avant réception.",
+      "answer_fr": "Je comprends. Le prix inclut la livraison gratuite, un appareil rechargeable, discret, et le paiement à la livraison. Vous ne payez rien avant réception.",
       "answer_ar": "نفهمك. هادي قابلة للشحن وما تحتاجش تبدل البطاريات كل مرة، صغيرة وتدخل داخل الودن، والتوصيل مجاني حتى لباب الدار في 58 ولاية. وتخلص غير كي توصلك وتشوفها.",
       "category": "price",
       "confidence": "high",

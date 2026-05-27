@@ -282,8 +282,8 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est à 14500 DA. Le prix est fixe, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numéro de téléphone et wilaya. Paiement à la livraison, délai 24-48h.`,
-      dz: `السماعة جريت إيرز جي 19 إس بسومة ثابتة: 14500 دج. التوصيل مجاني لكل 58 ولاية.\n\nباش تطلب، ابعث الاسم، رقم الهاتف، والولاية. الدفع كي توصلك، والمدة 24-48 ساعة.`,
+      fr: `Le Great-Ears G19S est à 14500 DA, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numéro de téléphone et wilaya. Paiement à la livraison, délai 24-48h.`,
+      dz: `السماعة جريت إيرز جي 19 إس بسومة 14500 دج. التوصيل مجاني لكل 58 ولاية.\n\nباش تطلب، ابعث الاسم، رقم الهاتف، والولاية. الدفع كي توصلك، والمدة 24-48 ساعة.`,
     },
     DELIVERY: {
       fr: `La livraison est gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures après confirmation. Le paiement se fait à la livraison.`,
