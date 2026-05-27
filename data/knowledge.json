@@ -89,9 +89,20 @@
   },
   "hearing_intake": {
     "purpose": "Understand whether the customer or relative may be suitable for G19S before selling.",
+    "level_labels_ar": [
+      "سمع مليح",
+      "سمع متوسط",
+      "سمع ناقص بزاف"
+    ],
+    "level_labels_fr": [
+      "bonne audition",
+      "audition moyenne",
+      "audition très faible"
+    ],
     "questions_ar": [
       "السماعة ليك ولا للوالد ولا للوالدة؟",
       "شحال في عمرو؟",
+      "تقريبا شحال يسمع؟ مليح، متوسط، ولا ناقص بزاف؟",
       "المشكل في ودن وحدة ولا زوج؟",
       "يسمع الصوت بصح الكلام ما يبانلوش مليح؟",
       "يعلي التلفزيون بزاف؟",
@@ -122,7 +133,7 @@
       "كاينة دوخة قوية",
       "كان حادث ولا ضربة في الراس"
     ],
-    "style_rule": "Ask one question at a time. Do not diagnose. For red flags, explain that G19S helps mild to moderate hearing loss and softly advise checking the ear first before buying."
+    "style_rule": "Ask one short question at a time. Use simple levels: good, medium, bad. Do not diagnose. Avoid long medical paragraphs."
   },
   "market_context": {
     "competing_brands": [
