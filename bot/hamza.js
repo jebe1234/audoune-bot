@@ -6,13 +6,9 @@ const {
   sendTypingOff,
   getUserProfile,
 } = require('./messenger');
-const axios                                   = require('axios');
-const { execFile }                           = require('child_process');
 const fs                                      = require('fs');
-const os                                      = require('os');
 const path                                    = require('path');
-const ffmpegPath                              = require('ffmpeg-static');
-const { generateResponse, transcribeAudio }   = require('./ai');
+const { generateResponse }                    = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
@@ -58,73 +54,6 @@ function hasAudioAttachment(message) {
   return (message.attachments || []).some((attachment) => attachment.type === 'audio');
 }
 
-function getAudioAttachment(message) {
-  return (message.attachments || []).find((attachment) => attachment.type === 'audio');
-}
-
-function isGeminiSupportedAudio(mimeType) {
-  return [
-    'audio/wav',
-    'audio/x-wav',
-    'audio/mp3',
-    'audio/mpeg',
-    'audio/aac',
-    'audio/ogg',
-    'audio/flac',
-    'audio/aiff',
-  ].includes(String(mimeType || '').toLowerCase());
-}
-
-function normalizeAudioMimeType(mimeType) {
-  const normalized = String(mimeType || '').toLowerCase();
-  if (normalized === 'audio/x-wav') return 'audio/wav';
-  if (normalized === 'audio/mpeg') return 'audio/mp3';
-  return normalized || 'audio/mp3';
-}
-
-function execFileAsync(command, args) {
-  return new Promise((resolve, reject) => {
-    execFile(command, args, { windowsHide: true }, (error, stdout, stderr) => {
-      if (error) {
-        error.stderr = stderr;
-        reject(error);
-        return;
-      }
-      resolve({ stdout, stderr });
-    });
-  });
-}
-
-async function convertAudioToMp3(audioBuffer) {
-  if (!ffmpegPath) throw new Error('ffmpeg-static is not available');
-
-  const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const inputPath = path.join(os.tmpdir(), `messenger-audio-${id}`);
-  const outputPath = path.join(os.tmpdir(), `messenger-audio-${id}.mp3`);
-
-  try {
-    fs.writeFileSync(inputPath, audioBuffer);
-    await execFileAsync(ffmpegPath, [
-      '-y',
-      '-i', inputPath,
-      '-vn',
-      '-ac', '1',
-      '-ar', '16000',
-      '-b:a', '64k',
-      outputPath,
-    ]);
-    return fs.readFileSync(outputPath);
-  } finally {
-    for (const filePath of [inputPath, outputPath]) {
-      try {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      } catch (err) {
-        console.warn('Could not remove temp audio file:', err.message);
-      }
-    }
-  }
-}
-
 function getPhoneHandoffMessage(lang) {
   return lang === 'fr'
     ? 'Vous pouvez m’appeler ici: +213563746369'
@@ -148,54 +77,6 @@ async function sendPhoneHandoff(recipientId, lang) {
   const text = getPhoneHandoffMessage(lang);
   const title = lang === 'fr' ? 'Appeler' : 'اتصل الآن';
   await sendCallButton(recipientId, text, phone, title);
-}
-
-async function transcribeMessengerAudio(message) {
-  const audio = getAudioAttachment(message);
-  const audioUrl = audio?.payload?.url;
-  if (!audioUrl) return '';
-
-  const requestOptions = {
-    responseType: 'arraybuffer',
-    timeout: 30000,
-    headers: { Accept: 'audio/*,*/*' },
-  };
-
-  let res;
-  try {
-    res = await axios.get(audioUrl, requestOptions);
-  } catch (err) {
-    if (!process.env.PAGE_ACCESS_TOKEN) throw err;
-    res = await axios.get(audioUrl, {
-      ...requestOptions,
-      params: { access_token: process.env.PAGE_ACCESS_TOKEN },
-      headers: {
-        ...requestOptions.headers,
-        Authorization: `Bearer ${process.env.PAGE_ACCESS_TOKEN}`,
-      },
-    });
-  }
-
-  let audioBuffer = Buffer.from(res.data);
-  let mimeType = String(res.headers['content-type'] || 'audio/mpeg').split(';')[0].toLowerCase();
-  if (/json|html|text/i.test(mimeType)) {
-    throw new Error(`Messenger audio URL returned ${mimeType}`);
-  }
-
-  if (!isGeminiSupportedAudio(mimeType)) {
-    console.log(`Converting Messenger audio from ${mimeType || 'unknown'} to mp3`);
-    audioBuffer = await convertAudioToMp3(audioBuffer);
-    mimeType = 'audio/mp3';
-  }
-
-  try {
-    return await transcribeAudio(audioBuffer, normalizeAudioMimeType(mimeType));
-  } catch (err) {
-    if (mimeType === 'audio/mp3') throw err;
-    console.log(`Retrying Messenger audio as converted mp3 after Gemini rejected ${mimeType}: ${err.message}`);
-    const converted = await convertAudioToMp3(audioBuffer);
-    return transcribeAudio(converted, 'audio/mp3');
-  }
 }
 
 function isBushraTrigger(text) {
@@ -243,20 +124,13 @@ async function handleMessage(senderId, message) {
   if (!text && hasAudioAttachment(message)) {
     const lang = session.language || 'dz';
     await sendTypingOn(senderId);
-    try {
-      text = (await transcribeMessengerAudio(message)).trim();
-    } catch (err) {
-      console.error('Audio transcription failed:', err.message);
-    }
+    await delay(500);
     await sendTypingOff(senderId);
-
-    if (!text) {
-      const msg = getPhoneHandoffMessage(lang);
-      await sendPhoneHandoff(senderId, lang);
-      addToHistory(session, 'user', '[audio]');
-      addToHistory(session, 'assistant', msg);
-      return;
-    }
+    const msg = getPhoneHandoffMessage(lang);
+    await sendPhoneHandoff(senderId, lang);
+    addToHistory(session, 'user', '[audio]');
+    addToHistory(session, 'assistant', msg);
+    return;
   }
 
   if (!text) return;
