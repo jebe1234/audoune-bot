@@ -6,9 +6,10 @@ const {
   sendTypingOff,
   getUserProfile,
 } = require('./messenger');
+const axios                                   = require('axios');
 const fs                                      = require('fs');
 const path                                    = require('path');
-const { generateResponse }                    = require('./ai');
+const { generateResponse, transcribeAudio }   = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
@@ -54,6 +55,10 @@ function hasAudioAttachment(message) {
   return (message.attachments || []).some((attachment) => attachment.type === 'audio');
 }
 
+function getAudioAttachment(message) {
+  return (message.attachments || []).find((attachment) => attachment.type === 'audio');
+}
+
 function getPhoneHandoffMessage(lang) {
   return lang === 'fr'
     ? 'Vous pouvez m’appeler ici: +213563746369'
@@ -65,6 +70,19 @@ async function sendPhoneHandoff(recipientId, lang) {
   const text = getPhoneHandoffMessage(lang);
   const title = lang === 'fr' ? 'Appeler' : 'اتصل الآن';
   await sendCallButton(recipientId, text, phone, title);
+}
+
+async function transcribeMessengerAudio(message) {
+  const audio = getAudioAttachment(message);
+  const audioUrl = audio?.payload?.url;
+  if (!audioUrl) return '';
+
+  const res = await axios.get(audioUrl, {
+    responseType: 'arraybuffer',
+    timeout: 30000,
+  });
+  const mimeType = String(res.headers['content-type'] || 'audio/mpeg').split(';')[0];
+  return transcribeAudio(Buffer.from(res.data), mimeType);
 }
 
 function isBushraTrigger(text) {
@@ -106,16 +124,26 @@ function getBushraLoveMessage(session) {
 
 // ─── Handle incoming text messages ────────────────────────────────────────────
 async function handleMessage(senderId, message) {
-  const text = (message.text || '').trim();
   const session = getSession(senderId);
+  let text = (message.text || '').trim();
 
   if (!text && hasAudioAttachment(message)) {
     const lang = session.language || 'dz';
-    const msg = getPhoneHandoffMessage(lang);
-    await sendPhoneHandoff(senderId, lang);
-    addToHistory(session, 'user', '[audio]');
-    addToHistory(session, 'assistant', msg);
-    return;
+    await sendTypingOn(senderId);
+    try {
+      text = (await transcribeMessengerAudio(message)).trim();
+    } catch (err) {
+      console.error('Audio transcription failed:', err.message);
+    }
+    await sendTypingOff(senderId);
+
+    if (!text) {
+      const msg = getPhoneHandoffMessage(lang);
+      await sendPhoneHandoff(senderId, lang);
+      addToHistory(session, 'user', '[audio]');
+      addToHistory(session, 'assistant', msg);
+      return;
+    }
   }
 
   if (!text) return;

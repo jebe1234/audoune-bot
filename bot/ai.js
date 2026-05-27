@@ -230,6 +230,31 @@ async function generateResponse(userMessage, language, conversationHistory, know
   }
 }
 
+async function transcribeAudio(audioBuffer, mimeType) {
+  const model = genAI.getGenerativeModel({
+    model: process.env.GEMINI_AUDIO_MODEL || 'gemini-2.5-flash',
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 300,
+    },
+  });
+
+  const result = await model.generateContent([
+    {
+      text:
+        'Transcribe this Messenger voice note. It may be Algerian Darija, Arabic, French, or a mix. Return only the customer words as plain text. If there is no understandable speech, return an empty string.',
+    },
+    {
+      inlineData: {
+        data: audioBuffer.toString('base64'),
+        mimeType: mimeType || 'audio/mpeg',
+      },
+    },
+  ]);
+
+  return result.response.text().trim();
+}
+
 // ─── Format conversation history for the prompt ────────────────────────────────
 function formatHistory(history) {
   if (!history || history.length === 0) return 'No previous messages — this is the first message.';
@@ -239,4 +264,4 @@ function formatHistory(history) {
     .join('\n');
 }
 
-module.exports = { generateResponse };
+module.exports = { generateResponse, transcribeAudio };
