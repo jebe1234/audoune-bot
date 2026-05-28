@@ -157,6 +157,87 @@ app.get('/diag', async (req, res) => {
   res.json(status);
 });
 
+// One-time helper: reply to recent conversations that arrived while Send API was broken.
+// Call: /admin/backfill?token=VERIFY_TOKEN&hours=24&limit=25
+app.get('/admin/backfill', async (req, res) => {
+  const token = req.query.token;
+  const allowedToken = process.env.BACKFILL_TOKEN || process.env.VERIFY_TOKEN;
+  if (!allowedToken || token !== allowedToken) return res.sendStatus(403);
+
+  const axios = require('axios');
+  const hours = Math.min(Math.max(parseInt(req.query.hours || '24', 10), 1), 24);
+  const limit = Math.min(Math.max(parseInt(req.query.limit || '25', 10), 1), 50);
+  const sinceMs = Date.now() - hours * 60 * 60 * 1000;
+  const result = {
+    checked: 0,
+    replied: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  try {
+    const me = await axios.get('https://graph.facebook.com/v19.0/me', {
+      params: { access_token: process.env.PAGE_ACCESS_TOKEN },
+    });
+    const pageId = String(me.data.id);
+
+    const conversations = await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
+      params: {
+        access_token: process.env.PAGE_ACCESS_TOKEN,
+        limit,
+        fields: 'id,updated_time,unread_count,participants,messages.limit(10){id,message,from,created_time,attachments}',
+      },
+    });
+
+    for (const conversation of conversations.data.data || []) {
+      result.checked += 1;
+      const updatedAt = new Date(conversation.updated_time || 0).getTime();
+      if (!updatedAt || updatedAt < sinceMs) {
+        result.skipped += 1;
+        continue;
+      }
+
+      const messages = conversation.messages?.data || [];
+      const latestCustomerMessage = messages.find((msg) => String(msg.from?.id) !== pageId);
+      if (!latestCustomerMessage) {
+        result.skipped += 1;
+        continue;
+      }
+
+      const messageTime = new Date(latestCustomerMessage.created_time || 0).getTime();
+      if (!messageTime || messageTime < sinceMs) {
+        result.skipped += 1;
+        continue;
+      }
+
+      const senderId = String(latestCustomerMessage.from.id);
+      const text = (latestCustomerMessage.message || '').trim();
+      const attachments = latestCustomerMessage.attachments?.data || [];
+      const hasAudio = attachments.some((attachment) =>
+        /audio/i.test(`${attachment.mime_type || ''} ${attachment.name || ''} ${attachment.type || ''}`)
+      );
+
+      try {
+        await handleMessage(senderId, {
+          text,
+          attachments: !text && hasAudio ? [{ type: 'audio' }] : [],
+        });
+        result.replied += 1;
+      } catch (err) {
+        result.errors.push({
+          conversationId: conversation.id,
+          message: err.message,
+        });
+      }
+    }
+
+    res.json(result);
+  } catch (err) {
+    const msg = err.response?.data?.error?.message || err.message;
+    res.status(500).json({ ...result, error: msg });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'online', bot: 'Hamza 🎧', uptime: Math.floor(process.uptime()) + 's' });
 });
