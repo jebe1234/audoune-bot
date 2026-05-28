@@ -1,12 +1,32 @@
 require('dotenv').config();
 const express = require('express');
 const { handleMessage, handlePostback } = require('./bot/hamza');
+const { getMessengerStatus } = require('./bot/messenger');
 
 const app = express();
 app.use(express.json());
 
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err.message || err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err.message || err);
+});
+
 const processedEvents = new Map();
 const EVENT_TTL_MS = 10 * 60 * 1000;
+
+function checkRequiredEnv() {
+  const required = ['PAGE_ACCESS_TOKEN', 'VERIFY_TOKEN', 'GOOGLE_API_KEY'];
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length) {
+    console.error(`Missing required env vars: ${missing.join(', ')}`);
+  }
+  if (!process.env.PAGE_ACCESS_TOKEN?.startsWith('EAA')) {
+    console.warn('PAGE_ACCESS_TOKEN does not look like a Facebook Page token.');
+  }
+}
 
 function getEventId(event) {
   if (event.message?.mid) return `message:${event.message.mid}`;
@@ -129,6 +149,7 @@ app.get('/diag', async (req, res) => {
     VERIFY_TOKEN:      mask(process.env.VERIFY_TOKEN),
     ADMIN_PSID:        process.env.ADMIN_PSID || 'MISSING',
     PORT:              process.env.PORT || '3000',
+    MESSENGER_STATUS:  getMessengerStatus(),
   };
 
   // Quick Gemini test
@@ -242,7 +263,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'online', bot: 'Hamza 🎧', uptime: Math.floor(process.uptime()) + 's' });
 });
 
+app.get('/status', (req, res) => {
+  res.json({
+    status: 'online',
+    bot: 'Hamza',
+    uptime: Math.floor(process.uptime()) + 's',
+    messenger: getMessengerStatus(),
+  });
+});
+
 const PORT = process.env.PORT || 3000;
+checkRequiredEnv();
 app.listen(PORT, () => {
   console.log(`🎧 Hamza is online on port ${PORT}`);
   console.log(`📡 Webhook: https://audoune-bot-production.up.railway.app/webhook`);

@@ -1,17 +1,54 @@
 const axios = require('axios');
 
 const GRAPH_API = 'https://graph.facebook.com/v19.0/me/messages';
+const SEND_RETRIES = 2;
+const messengerStatus = {
+  ok: null,
+  lastSuccessAt: null,
+  lastErrorAt: null,
+  lastError: null,
+};
 
 // ─── Core Send API call ────────────────────────────────────────────────────────
-async function callSendAPI(body) {
-  try {
-    await axios.post(GRAPH_API, body, {
-      params: { access_token: process.env.PAGE_ACCESS_TOKEN },
-    });
-  } catch (err) {
-    const msg = err.response?.data?.error?.message || err.message;
-    console.error('Messenger API error:', msg);
+async function callSendAPI(body, options = {}) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= SEND_RETRIES; attempt++) {
+    try {
+      const response = await axios.post(GRAPH_API, body, {
+        params: { access_token: process.env.PAGE_ACCESS_TOKEN },
+        timeout: 15000,
+      });
+      messengerStatus.ok = true;
+      messengerStatus.lastSuccessAt = new Date().toISOString();
+      messengerStatus.lastError = null;
+      return response.data;
+    } catch (err) {
+      lastError = err;
+      const status = err.response?.status;
+      const retryable = !status || status >= 500 || status === 429;
+      if (!retryable || attempt === SEND_RETRIES) break;
+      await delay(500 * (attempt + 1));
+    }
   }
+
+  const msg = lastError.response?.data?.error?.message || lastError.message;
+  messengerStatus.ok = false;
+  messengerStatus.lastErrorAt = new Date().toISOString();
+  messengerStatus.lastError = msg;
+  console.error('Messenger API error:', msg);
+
+  if (!options.optional) {
+    throw new Error(`Messenger API error: ${msg}`);
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getMessengerStatus() {
+  return { ...messengerStatus };
 }
 
 // ─── Send plain text ───────────────────────────────────────────────────────────
@@ -70,14 +107,14 @@ async function sendTypingOn(recipientId) {
   await callSendAPI({
     recipient: { id: recipientId },
     sender_action: 'typing_on',
-  });
+  }, { optional: true });
 }
 
 async function sendTypingOff(recipientId) {
   await callSendAPI({
     recipient: { id: recipientId },
     sender_action: 'typing_off',
-  });
+  }, { optional: true });
 }
 
 // ─── Quick reply buttons ───────────────────────────────────────────────────────
@@ -130,4 +167,5 @@ module.exports = {
   sendTypingOff,
   sendQuickReplies,
   getUserProfile,
+  getMessengerStatus,
 };
