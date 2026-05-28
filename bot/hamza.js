@@ -32,14 +32,97 @@ function getSession(userId) {
       bushraMode:   false,
       bushraLoveCount: 0,
       humanContextUntil: 0,
+      memory: {
+        facts: {},
+        asked: {},
+        lastQuestion: null,
+      },
     });
   }
   return sessions.get(userId);
 }
 
+function normalizeMemoryText(content) {
+  return String(content || '').toLowerCase().trim();
+}
+
+function rememberFact(session, key, value) {
+  if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
+  if (value !== undefined && value !== null && String(value).trim()) {
+    session.memory.facts[key] = String(value).trim();
+  }
+}
+
+function markAsked(session, key) {
+  if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
+  session.memory.asked[key] = Date.now();
+  session.memory.lastQuestion = key;
+}
+
+function detectQuestionKey(content) {
+  const text = normalizeMemoryText(content);
+  if (/(percentage|pourcentage|%|شحال يسمع|قداه يسمع|ناقص بزاف|متوسط|مليح)/i.test(text)) return 'hearing_level';
+  if (/(age|old|ans|عمر|عمرو|سن)/i.test(text)) return 'age';
+  if (/(one ear|both ears|oreille|deux|ودن|وذن|زوج|زوز)/i.test(text)) return 'ears';
+  if (/(tv|télé|tele|volume|تلفزيون|تيليفزيون)/i.test(text)) return 'tv_volume';
+  if (/(since|depuis|وقتاش|منين|مدة)/i.test(text)) return 'duration';
+  if (/(pain|douleur|vertige|infection|وجع|دوخة|التهاب|سيلان)/i.test(text)) return 'symptoms';
+  return null;
+}
+
+function updateMemoryFromUser(session, content) {
+  if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
+  const text = normalizeMemoryText(content);
+  if (!text) return;
+
+  const percent = text.match(/\b(10|20|30|40|50|60|70|80|90|100)\s*%/);
+  if (percent) rememberFact(session, 'hearing_level', `${percent[1]}%`);
+  else if (/(ناقص بزاف|tr[eè]s faible|very weak|bad hearing)/i.test(text)) rememberFact(session, 'hearing_level', 'very weak');
+  else if (/(متوسط|moyen|medium)/i.test(text)) rememberFact(session, 'hearing_level', 'medium');
+  else if (/(مليح|good|bien)/i.test(text)) rememberFact(session, 'hearing_level', 'good');
+
+  const age =
+    text.match(/(?:age|old|ans|عمر|عمرو|سن)[^\d]{0,12}(\d{1,3})/i) ||
+    text.match(/\b(\d{1,3})\s*(?:ans|years?|سنة|عام)\b/i);
+  if (age) rememberFact(session, 'age', age[1]);
+
+  if (/(both|two ears|les deux|deux oreilles|زوج|زوز)/i.test(text)) rememberFact(session, 'ears', 'both ears');
+  else if (/(one ear|une oreille|ودن وحدة|وذن وحدة|واحدة)/i.test(text)) rememberFact(session, 'ears', 'one ear');
+
+  if (/(tv|télé|tele|volume|تلفزيون|تيليفزيون)/i.test(text)) {
+    if (/(yes|oui|ايه|نعم|بزاف|يرفع|يعلي)/i.test(text)) rememberFact(session, 'tv_volume', 'raises TV volume');
+    if (/(no|non|لا|ماشي)/i.test(text)) rememberFact(session, 'tv_volume', 'does not raise TV volume');
+  }
+
+  const duration =
+    text.match(/(?:since|depuis|منذ|من|وقتاش|مدة)[^\n.،]{0,40}/i) ||
+    text.match(/\b(\d+\s*(?:days?|weeks?|months?|years?|jours?|semaines?|mois|ans|ايام|اسابيع|شهور|سنين|عام))\b/i);
+  if (duration) rememberFact(session, 'duration', duration[0]);
+
+  if (/(pain|douleur|وجع|يضر|سيلان|infection|التهاب|vertige|دوخة)/i.test(text)) {
+    rememberFact(session, 'symptoms', text);
+  }
+
+  if (/^\s*(yes|oui|ايه|نعم|صح|كاين)\s*$/i.test(text) && session.memory.lastQuestion) {
+    rememberFact(session, session.memory.lastQuestion, 'yes');
+  }
+  if (/^\s*(no|non|لا|ماكانش|ما كاينش)\s*$/i.test(text) && session.memory.lastQuestion) {
+    rememberFact(session, session.memory.lastQuestion, 'no');
+  }
+
+  session.memory.lastQuestion = null;
+}
+
+function updateMemoryFromAssistant(session, content) {
+  const key = detectQuestionKey(content);
+  if (key) markAsked(session, key);
+}
+
 function addToHistory(session, role, content) {
+  if (role === 'user') updateMemoryFromUser(session, content);
+  if (role === 'assistant') updateMemoryFromAssistant(session, content);
   session.history.push({ role, content, timestamp: Date.now() });
-  if (session.history.length > 12) session.history.shift(); // Keep last 12 turns
+  if (session.history.length > 40) session.history.shift();
 }
 
 function delay(ms) {
@@ -308,6 +391,7 @@ async function processMessage(senderId, message) {
     text,
     session.language,
     session.history,
+    session.memory,
     knowledgeContext
   );
 
@@ -336,6 +420,9 @@ async function processMessage(senderId, message) {
     if (o.name)   session.orderBuffer.name   = o.name;
     if (o.phone)  session.orderBuffer.phone  = o.phone;
     if (o.wilaya) session.orderBuffer.wilaya = o.wilaya;
+    if (o.name)   rememberFact(session, 'order_name', o.name);
+    if (o.phone)  rememberFact(session, 'order_phone', o.phone);
+    if (o.wilaya) rememberFact(session, 'order_wilaya', o.wilaya);
 
     const buf = session.orderBuffer;
     if (buf.name && buf.phone && buf.wilaya) {
