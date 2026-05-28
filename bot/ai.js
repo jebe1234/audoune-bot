@@ -1,4 +1,5 @@
-﻿const { GoogleGenerativeAI } = require('@google/generative-ai');
+﻿const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
@@ -33,6 +34,147 @@ function shouldTryNextModel(err) {
     message.includes('overloaded') ||
     message.includes('unavailable')
   );
+}
+
+function getFreeModelApiKey() {
+  return process.env.FREEMODEL_API_KEY || process.env.OPENAI_COMPATIBLE_API_KEY || process.env.ANTHROPIC_API_KEY;
+}
+
+function getFreeModelBaseUrl() {
+  return (process.env.FREEMODEL_BASE_URL || 'https://api.freemodel.dev').replace(/\/$/, '');
+}
+
+function getFreeModelModel() {
+  return process.env.FREEMODEL_MODEL || process.env.OPENAI_COMPATIBLE_MODEL || 'gpt-4o-mini';
+}
+
+async function generateWithFreeModel(userMessage, systemPrompt) {
+  const apiKey = getFreeModelApiKey();
+  if (!apiKey) {
+    throw new Error('FREEMODEL_API_KEY is missing');
+  }
+
+  const response = await axios.post(
+    `${getFreeModelBaseUrl()}/v1/chat/completions`,
+    {
+      model: getFreeModelModel(),
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      temperature: 0.5,
+      max_tokens: 180,
+      response_format: { type: 'json_object' },
+    },
+    {
+      timeout: 30000,
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+    }
+  );
+
+  const raw = response.data?.choices?.[0]?.message?.content || '';
+  return normalizeAiResult(parseAiJson(raw));
+}
+
+function getAnthropicBaseUrl() {
+  return (process.env.ANTHROPIC_BASE_URL || 'https://cc.freemodel.dev').replace(/\/$/, '');
+}
+
+function getAnthropicModel() {
+  return process.env.ANTHROPIC_MODEL || process.env.CLAUDE_MODEL || 'claude-sonnet-4-5';
+}
+
+function getAnthropicMessagesUrl() {
+  const baseUrl = getAnthropicBaseUrl();
+  return baseUrl.endsWith('/v1') ? `${baseUrl}/messages` : `${baseUrl}/v1/messages`;
+}
+
+function getTextFromAnthropicResponse(data) {
+  const parts = Array.isArray(data?.content) ? data.content : [];
+  return parts
+    .filter((part) => part.type === 'text' && part.text)
+    .map((part) => part.text)
+    .join('\n')
+    .trim();
+}
+
+function parseAiJson(raw) {
+  const cleaned = String(raw || '')
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```$/i, '')
+    .trim();
+  return JSON.parse(cleaned);
+}
+
+function normalizeAiResult(parsed) {
+  if (parsed.message) {
+    parsed.message = parsed.message.replace(/^[\s¡!¿?،؟\-–—]+/, '').trim();
+  }
+  return parsed;
+}
+
+async function generateWithAnthropic(userMessage, systemPrompt) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is missing');
+  }
+
+  const response = await axios.post(
+    getAnthropicMessagesUrl(),
+    {
+      model: getAnthropicModel(),
+      max_tokens: 180,
+      temperature: 0.5,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    },
+    {
+      timeout: 30000,
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+    }
+  );
+
+  const raw = getTextFromAnthropicResponse(response.data);
+  return normalizeAiResult(parseAiJson(raw));
+}
+
+async function generateWithGemini(userMessage, systemPrompt) {
+  let lastError;
+  const models = getModelFallbacks();
+
+  for (const modelName of models) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt,
+        generationConfig: {
+          temperature: 0.5,
+          maxOutputTokens: 180,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const result = await model.generateContent(userMessage);
+      const parsed = parseAiJson(result.response.text());
+      if (modelName !== models[0]) {
+        console.log(`Gemini fallback model used: ${modelName}`);
+      }
+      return normalizeAiResult(parsed);
+    } catch (err) {
+      lastError = err;
+      console.error(`Gemini error with ${modelName}:`, err.message);
+      if (!shouldTryNextModel(err)) break;
+    }
+  }
+
+  throw lastError || new Error('All Gemini models failed');
 }
 
 // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Hamza's Core Personality Prompt Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -252,51 +394,41 @@ async function generateResponse(userMessage, language, conversationHistory, know
     .replace('{KNOWLEDGE_CONTEXT}', knowledgeContext || 'No additional facts yet.')
     .replace('{CONVERSATION_HISTORY}', formatHistory(conversationHistory));
 
-  let lastError;
-  const models = getModelFallbacks();
+  try {
+    const result = await generateWithFreeModel(userMessage, systemPrompt);
+    console.log(`Primary AI provider used: FreeModel OpenAI-compatible (${getFreeModelBaseUrl()}, ${getFreeModelModel()})`);
+    return result;
+  } catch (err) {
+    console.error('Primary FreeModel provider failed:', err.response?.data?.error?.message || err.message);
+  }
 
-  for (const modelName of models) {
+  if (process.env.ENABLE_ANTHROPIC_FALLBACK === '1') {
     try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: systemPrompt,
-        generationConfig: {
-          temperature:     0.5,
-          maxOutputTokens: 180,
-          responseMimeType: 'application/json',
-        },
-      });
-
-      const result = await model.generateContent(userMessage);
-      const raw    = result.response.text();
-      const parsed = JSON.parse(raw);
-
-      if (parsed.message) {
-        parsed.message = parsed.message.replace(/^[\s¡!¿?،؟\-–—]+/, '').trim();
-      }
-      if (modelName !== models[0]) {
-        console.log(`Gemini fallback model used: ${modelName}`);
-      }
-      return parsed;
-
+      const result = await generateWithAnthropic(userMessage, systemPrompt);
+      console.log(`Secondary AI provider used: Anthropic-compatible (${getAnthropicBaseUrl()})`);
+      return result;
     } catch (err) {
-      lastError = err;
-      console.error(`Gemini error with ${modelName}:`, err.message);
-      if (!shouldTryNextModel(err)) break;
+      console.error('Anthropic-compatible provider failed:', err.response?.data?.error?.message || err.message);
     }
   }
 
-  console.error('All Gemini models failed:', lastError?.message);
-  return {
-    message: language === 'fr'
-      ? "Désolé, j'ai eu un petit problème technique. Pouvez-vous répéter votre question?"
-      : "سمحلي، صار مشكل تقني صغير. تقدر تعاود سؤالك؟",
-    detected_language: language || 'dz',
-    learned_fact:      null,
-    needs_admin:       true,
-    confidence:        'low',
-    order_info:        null,
-  };
+  try {
+    const result = await generateWithGemini(userMessage, systemPrompt);
+    console.log('Fallback AI provider used: Gemini');
+    return result;
+  } catch (err) {
+    console.error('All AI providers failed:', err.message);
+    return {
+      message: language === 'fr'
+        ? "Désolé, j'ai eu un petit problème technique. Pouvez-vous répéter votre question?"
+        : "سمحلي، صار مشكل تقني صغير. تقدر تعاود سؤالك؟",
+      detected_language: language || 'dz',
+      learned_fact:      null,
+      needs_admin:       true,
+      confidence:        'low',
+      order_info:        null,
+    };
+  }
 }
 
 // Format conversation history for the prompt Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
