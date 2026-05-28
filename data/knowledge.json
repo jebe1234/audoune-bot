@@ -81,6 +81,7 @@
       "Do not guarantee exact percentages of improvement.",
       "Do not rush directly to order collection after the customer shares a hearing condition.",
       "Collect order details only after the customer clearly wants to order.",
+      "Do not ask who the hearing aid is for. If the customer says it is for their mother, father, or someone else, use that naturally, but never make it a required question.",
       "Do not mention price in every reply. Mention 14500 DA only when asked or when order/price topic comes up first.",
       "After price has been mentioned once, do not repeat it unless the customer asks again.",
       "Ask simple hearing intake questions before recommending the product.",
@@ -114,7 +115,6 @@
       "audition très faible"
     ],
     "questions_ar": [
-      "السماعة ليك ولا للوالد ولا للوالدة؟",
       "شحال في عمرو؟",
       "تقريبا شحال يسمع؟ مليح، متوسط، ولا ناقص بزاف؟",
       "المشكل في ودن وحدة ولا زوج؟",
@@ -124,7 +124,6 @@
       "كاين وجع، سيلان من الودن، دوخة، التهاب، ولا نقص سمع جا فجأة؟"
     ],
     "questions_fr": [
-      "C'est pour vous ou pour un parent?",
       "Quel âge a la personne?",
       "Le problème est dans une oreille ou les deux?",
       "La personne entend les sons mais comprend mal les paroles?",
@@ -315,8 +314,8 @@
     {
       "id": "faq_hearing_intake_start",
       "question_summary": "Start hearing problem intake",
-      "answer_fr": "Pour comprendre le cas, dites-moi d'abord: c'est pour vous ou pour un parent?",
-      "answer_ar": "باش نفهم الحالة، قولي برك: السماعة ليك ولا للوالد ولا للوالدة؟",
+      "answer_fr": "Pour comprendre le cas, dites-moi d'abord: l'audition est faible, moyenne, ou très faible?",
+      "answer_ar": "باش نفهم الحالة، قولي برك: السمع ناقص شوية، متوسط، ولا ناقص بزاف؟",
       "category": "hearing_intake",
       "confidence": "high",
       "source": "admin"
