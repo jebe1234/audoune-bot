@@ -32,6 +32,7 @@ function getSession(userId) {
       bushraMode:   false,
       bushraLoveCount: 0,
       humanContextUntil: 0,
+      adminMode: false,
       memory: {
         facts: {},
         asked: {},
@@ -208,6 +209,54 @@ function isBushraTrigger(text) {
   return hasBushra && (asksWho || saysIam);
 }
 
+function isAdminModeTrigger(text) {
+  return /^(i'?m|i am)\s+the\s+admin$|^admin$|^انا\s+الادمن$|^راني\s+الادمن$/i.test(text.trim());
+}
+
+function extractAdminLearnInstruction(text) {
+  const trimmed = text.trim();
+  const learnMatch = trimmed.match(/^(?:learn|teach|make him learn|خليه يتعلم|علمو)\s*[:\-]?\s*(.+)$/i);
+  const content = learnMatch ? learnMatch[1].trim() : trimmed;
+  const separator = content.includes('=') ? '=' : content.includes(':') ? ':' : null;
+  if (!separator) return null;
+
+  const parts = content.split(separator);
+  if (parts.length < 2) return null;
+
+  const question = parts[0].trim();
+  const answer = parts.slice(1).join(separator).trim();
+  if (!question || !answer) return null;
+  return { question, answer };
+}
+
+async function handleAdminModeMessage(senderId, session, text) {
+  if (!isAdmin(senderId)) return false;
+
+  if (isAdminModeTrigger(text)) {
+    session.adminMode = true;
+    await sendText(senderId, 'Admin mode on. اكتب: learn السؤال = الجواب');
+    return true;
+  }
+
+  if (!session.adminMode) return false;
+
+  if (/^(exit admin|stop admin|خرج|حبس)$/i.test(text.trim())) {
+    session.adminMode = false;
+    await sendText(senderId, 'Admin mode off.');
+    return true;
+  }
+
+  const instruction = extractAdminLearnInstruction(text);
+  if (instruction) {
+    const id = knowledge.addAdminFact(instruction.question, instruction.answer, instruction.answer);
+    await sendText(senderId, `تم. Hamza تعلمها.\nID: ${id.substring(0, 8)}`);
+    return true;
+  }
+
+  await sendText(senderId, 'اكتبها هكذا: learn السؤال = الجواب');
+  return true;
+}
+
 function getProductPhotoUrls() {
   const manifestPath = path.join(__dirname, '../data/products/G19S.json');
   try {
@@ -270,6 +319,10 @@ async function processMessage(senderId, message) {
   // â”€â”€ Admin command handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isAdmin(senderId) && text.startsWith('!')) {
     await handleAdminCommand(senderId, text);
+    return;
+  }
+
+  if (await handleAdminModeMessage(senderId, session, text)) {
     return;
   }
 

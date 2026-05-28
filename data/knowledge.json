@@ -439,5 +439,16 @@
     }
   ],
   "pending_facts": [],
-  "learned_facts": []
+  "learned_facts": [
+    {
+      "id": "admin_g19s_db_range",
+      "question_summary": "Maximum hearing aid decibel range",
+      "answer_fr": "Le G19S peut couvrir un niveau d'amplification d'environ 10 dB jusqu'à 110 dB selon le réglage et le besoin de la personne.",
+      "answer_ar": "السماعة تقدر توصل من حوالي 10 ديسيبل حتى 110 ديسيبل، حسب الضبط وحسب حالة السمع تاع الشخص.",
+      "confidence": "high",
+      "source": "admin",
+      "timestamp": "2026-05-28T00:00:00.000Z",
+      "approved": true
+    }
+  ]
 }
