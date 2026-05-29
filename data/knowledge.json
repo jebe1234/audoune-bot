@@ -305,7 +305,7 @@
     {
       "id": "faq_suitability",
       "question_summary": "Who the product is suitable for",
-      "answer_fr": "Le G19S aide surtout les personnes avec une perte auditive légère à modérée. Si la personne n'entend rien du tout, ou s'il y a douleur, infection, vertige ou écoulement, il faut consulter un spécialiste.",
+      "answer_fr": "Le G19S aide surtout les personnes qui entendent encore un peu mais comprennent mal les paroles. Il amplifie le son et rend la parole plus claire.",
       "answer_ar": "السماعة تقدر تعاون حتى كي يكون السمع ناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الكلام يبان أوضح، والصوت تاعها صافي بلا تشويش مزعج. يسمع الأصوات شوية ولا غير يحس بالحركة؟",
       "category": "suitability",
       "confidence": "high",
@@ -332,7 +332,7 @@
     {
       "id": "faq_elderly_parent",
       "question_summary": "Elderly parent suitability",
-      "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser. Pour une perte très forte ou un problème médical de l'oreille, mieux vaut consulter un spécialiste.",
+      "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser.",
       "answer_ar": "ربي يحفظو ويطول في عمرو. حتى إذا السمع ناقص بزاف، من 10% وطالع، السماعة تقدر تعاونو تكبر الصوت وتوضح الهدرة. يسمع شوية كي تهدرو معاه ولا غير الأصوات؟",
       "category": "suitability",
       "confidence": "high",
@@ -341,7 +341,7 @@
     {
       "id": "faq_effectiveness",
       "question_summary": "Does it work",
-      "answer_fr": "Elle aide à amplifier et clarifier les sons pour les pertes légères à modérées. Elle ne guérit pas la surdité et ne remplace pas une consultation médicale quand le problème est sévère.",
+      "answer_fr": "Elle aide à amplifier et clarifier les sons pour les pertes légères à fortes quand la personne entend encore un peu. Le son est propre, sans grésillement gênant.",
       "answer_ar": "تنفع حتى للسمع الناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الهدرة والتلفزيون والقعدة مع العائلة يبانوا أوضح.",
       "category": "effectiveness",
       "confidence": "high",

@@ -75,6 +75,32 @@ function updateMemoryFromUser(session, content) {
   if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
   const text = normalizeMemoryText(content);
   if (!text) return;
+  const lastQuestion = session.memory.lastQuestion;
+
+  if (/^\s*\d{1,3}\s*(?:عام|سنة|ans|years?)?\s*$/i.test(text) && lastQuestion === 'age') {
+    const ageOnly = text.match(/\d{1,3}/)?.[0];
+    if (ageOnly) rememberFact(session, 'age', ageOnly);
+    session.memory.lastQuestion = null;
+    return;
+  }
+
+  if (lastQuestion === 'ears' && /(لزوج|زوج|زوز|both|deux)/i.test(text)) {
+    rememberFact(session, 'ears', 'both ears');
+    session.memory.lastQuestion = null;
+    return;
+  }
+
+  if (lastQuestion === 'ears' && /(وحدة|واحدة|one|une)/i.test(text)) {
+    rememberFact(session, 'ears', 'one ear');
+    session.memory.lastQuestion = null;
+    return;
+  }
+
+  if (lastQuestion === 'hearing_level' && /(بزاف|ناقص|ضعيف|faible|weak)/i.test(text)) {
+    rememberFact(session, 'hearing_level', 'very weak');
+    session.memory.lastQuestion = null;
+    return;
+  }
 
   const percent = text.match(/\b(10|20|30|40|50|60|70|80|90|100)\s*%/);
   if (percent) rememberFact(session, 'hearing_level', `${percent[1]}%`);
@@ -84,11 +110,16 @@ function updateMemoryFromUser(session, content) {
 
   const age =
     text.match(/(?:age|old|ans|عمر|عمرو|سن)[^\d]{0,12}(\d{1,3})/i) ||
-    text.match(/\b(\d{1,3})\s*(?:ans|years?|سنة|عام)\b/i);
+    text.match(/\b(\d{1,3})\s*(?:ans|years?|سنة|عام)\b/i) ||
+    text.match(/(\d{1,3})\s*(?:عام|سنة)/i);
   if (age) rememberFact(session, 'age', age[1]);
 
-  if (/(both|two ears|les deux|deux oreilles|زوج|زوز)/i.test(text)) rememberFact(session, 'ears', 'both ears');
+  if (/(both|two ears|les deux|deux oreilles|لزوج|زوج|زوز)/i.test(text)) rememberFact(session, 'ears', 'both ears');
   else if (/(one ear|une oreille|ودن وحدة|وذن وحدة|واحدة)/i.test(text)) rememberFact(session, 'ears', 'one ear');
+
+  if (/(لهدرة|الهدرة|الكلام|منفرزش|ما نفرزش|speech|paroles)/i.test(text)) {
+    rememberFact(session, 'speech_clarity', 'hears sound but speech is not clear');
+  }
 
   if (/(tv|télé|tele|volume|تلفزيون|تيليفزيون)/i.test(text)) {
     if (/(yes|oui|ايه|نعم|بزاف|يرفع|يعلي)/i.test(text)) rememberFact(session, 'tv_volume', 'raises TV volume');
@@ -166,11 +197,11 @@ function enqueueCustomerMessage(senderId, message) {
 }
 
 function isPhotoRequest(text) {
-  return /(photo|image|picture|pic|ØµÙˆØ±|ØµÙˆØ±Ø©|ØªØµÙˆÙŠØ±Ø©|ÙÙˆØ·Ùˆ|ÙÙˆØªÙˆ|ÙˆØ±ÙŠÙ†ÙŠ|Ù†Ø´ÙˆÙÙ‡Ø§|Ø´ÙˆÙÙ†ÙŠ|Ø´ÙƒÙ„Ù‡Ø§)/i.test(text);
+  return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها|نشوفو|ابعثلي|ابعتلي)/i.test(text);
 }
 
 function isPhoneRequest(text) {
-  return /(phone|number|call|tel|t[eÃ©]l[eÃ©]phone|num[eÃ©]ro|appel|appeler|Ø±Ù‚Ù…|Ù†Ù…Ø±[Ø§Ùˆ]?|ØªÙ„ÙŠÙÙˆÙ†|Ù‡Ø§ØªÙ|Ø¹ÙŠØ·|Ù†ØªØµÙ„|Ø§ØªØµÙ„|Ù†ÙƒÙ„Ù…|ÙƒÙˆÙ„)/i.test(text);
+  return /(phone|number|call|tel|t[eé]l[eé]phone|num[eé]ro|appel|appeler|رقم|نمرا|نمروا|تليفون|هاتف|عيط|نتصل|اتصل|نكلم|كول)/i.test(text);
 }
 
 function hasAudioAttachment(message) {
@@ -179,26 +210,26 @@ function hasAudioAttachment(message) {
 
 function getPhoneHandoffMessage(lang) {
   return lang === 'fr'
-    ? 'Vous pouvez mâ€™appeler ici: +213563746369'
-    : 'ØªÙ‚Ø¯Ø± ØªØ¹ÙŠØ·Ù„ÙŠ Ù‡Ù†Ø§: +213563746369';
+    ? "Vous pouvez m'appeler ici: +213563746369"
+    : 'تقدر تعيطلي هنا: +213563746369';
 }
 
 function getClarifyMessage(lang, isAudio = false) {
   if (lang === 'fr') {
     return isAudio
-      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou Ã©crivez-moi juste votre question."
+      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou écrivez-moi juste votre question."
       : "Je n'ai pas bien compris. Vous pouvez me le dire autrement?";
   }
 
   return isAudio
-    ? 'Ù…Ø§ ÙÙ‡Ù…ØªØ´ Ø§Ù„ØµÙˆØª Ù…Ù„ÙŠØ­. Ø¹Ø§ÙˆØ¯ Ø§Ø¨Ø¹Ø«Ù‡ ÙˆØ§Ø¶Ø­ Ø´ÙˆÙŠØ©ØŒ ÙˆÙ„Ø§ Ø§ÙƒØªØ¨Ù„ÙŠ Ø§Ù„Ø³Ø¤Ø§Ù„ Ø¨Ø±Ùƒ.'
-    : 'Ù…Ø§ ÙÙ‡Ù…ØªØ´ Ù…Ù„ÙŠØ­. ØªÙ‚Ø¯Ø± ØªØ¹Ø§ÙˆØ¯Ù‡Ø§ Ø¨Ø·Ø±ÙŠÙ‚Ø© Ø£Ø®Ø±Ù‰ØŸ';
+    ? 'ما فهمتش الصوت مليح. عاود ابعثه واضح شوية، ولا اكتبلي السؤال برك.'
+    : 'ما فهمتش مليح. تقدر تعاودها بطريقة أخرى؟';
 }
 
 async function sendPhoneHandoff(recipientId, lang) {
   const phone = '+213563746369';
   const text = getPhoneHandoffMessage(lang);
-  const title = lang === 'fr' ? 'Appeler' : 'Ø§ØªØµÙ„ Ø§Ù„Ø¢Ù†';
+  const title = lang === 'fr' ? 'Appeler' : 'اتصل الآن';
   await sendCallButton(recipientId, text, phone, title);
 }
 
@@ -389,13 +420,13 @@ async function processMessage(senderId, message) {
       }
       const msg = lang === 'fr'
         ? 'Voici les photos du produit.'
-        : 'Ù‡Ø°Ùˆ ØµÙˆØ± Ø§Ù„Ù…Ù†ØªØ¬.';
+        : 'هذو صور المنتج.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     } else {
       const msg = lang === 'fr'
-        ? "La photo n'est pas encore configurÃ©e. Je peux quand mÃªme vous donner les dÃ©tails du produit."
-        : "Ø§Ù„ØµÙˆØ±Ø© Ù…Ø§ Ø±Ø§Ù‡ÙŠØ´ Ù…Ø¨Ø±Ù…Ø¬Ø© Ø¯Ø±ÙˆÙƒ. Ù†Ù‚Ø¯Ø± Ù†Ø¹Ø·ÙŠÙƒ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ù…Ù†ØªØ¬.";
+        ? "La photo n'est pas encore configurée. Je peux quand même vous donner les détails du produit."
+        : 'الصورة ما راهيش مبرمجة دروك. نقدر نعطيك تفاصيل المنتج.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     }
@@ -530,20 +561,20 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est Ã  14500 DA, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numÃ©ro de tÃ©lÃ©phone et wilaya. Paiement Ã  la livraison, dÃ©lai 24-48h.`,
-      dz: `Ø§Ù„Ø³Ù…Ø§Ø¹Ø© Ø¬Ø±ÙŠØª Ø¥ÙŠØ±Ø² Ø¬ÙŠ 19 Ø¥Ø³ Ø¨Ø³ÙˆÙ…Ø© 14500 Ø¯Ø¬. Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…Ø¬Ø§Ù†ÙŠ Ù„ÙƒÙ„ 58 ÙˆÙ„Ø§ÙŠØ©.\n\nØ¨Ø§Ø´ ØªØ·Ù„Ø¨ØŒ Ø§Ø¨Ø¹Ø« Ø§Ù„Ø§Ø³Ù…ØŒ Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙØŒ ÙˆØ§Ù„ÙˆÙ„Ø§ÙŠØ©. Ø§Ù„Ø¯ÙØ¹ ÙƒÙŠ ØªÙˆØµÙ„ÙƒØŒ ÙˆØ§Ù„Ù…Ø¯Ø© 24-48 Ø³Ø§Ø¹Ø©.`,
+      fr: `Le Great-Ears G19S est à 14500 DA, livraison gratuite dans les 58 wilayas.`,
+      dz: `السومة 14500 دج، والتوصيل مجاني لكل 58 ولاية.`,
     },
     DELIVERY: {
-      fr: `La livraison est gratuite dans les 58 wilayas. Le dÃ©lai est gÃ©nÃ©ralement 24 Ã  48 heures aprÃ¨s confirmation. Le paiement se fait Ã  la livraison.`,
-      dz: `Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…Ø¬Ø§Ù†ÙŠ Ù„ÙƒÙ„ 58 ÙˆÙ„Ø§ÙŠØ©. Ø§Ù„Ù…Ø¯Ø© ØºØ§Ù„Ø¨Ø§ Ù…Ù† 24 Ø­ØªÙ‰ 48 Ø³Ø§Ø¹Ø© Ø¨Ø¹Ø¯ Ø§Ù„ØªØ£ÙƒÙŠØ¯. Ø§Ù„Ø¯ÙØ¹ ÙŠÙƒÙˆÙ† Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù….`,
+      fr: `Livraison gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures.`,
+      dz: `التوصيل مجاني لكل 58 ولاية. المدة غالبا من 24 حتى 48 ساعة.`,
     },
     EFFECTIVENESS: {
-      fr: `La personne entend comment: bien, moyen, ou trÃ¨s faible?`,
-      dz: `Ø§Ù„Ø´Ø®Øµ ÙŠØ³Ù…Ø¹ ÙƒÙŠÙØ§Ø´: Ù…Ù„ÙŠØ­ØŒ Ù…ØªÙˆØ³Ø·ØŒ ÙˆÙ„Ø§ Ù†Ø§Ù‚Øµ Ø¨Ø²Ø§ÙØŸ`,
+      fr: `L'audition est faible, moyenne, ou très faible?`,
+      dz: `السمع ناقص شوية، متوسط، ولا ناقص بزاف؟`,
     },
     PRODUCT: {
-      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, rÃ©duction du bruit, son propre, couleurs bleu, rouge ou beige.`,
-      dz: `Ø¬Ø±ÙŠØª Ø¥ÙŠØ±Ø² Ø¬ÙŠ 19 Ø¥Ø³ Ø³Ù…Ø§Ø¹Ø© Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø´Ø­Ù† ØªØ¯Ø®Ù„ Ø¯Ø§Ø®Ù„ Ø§Ù„ÙˆØ¯Ù†.\n\nØªØ®Ø¯Ù… Ø­ÙˆØ§Ù„ÙŠ 20 Ø³Ø§Ø¹Ø©ØŒ ØªØ´Ø­Ù† ÙÙŠ Ø­ÙˆØ§Ù„ÙŠ 2 Ø³Ø§Ø¹Ø§ØªØŒ ÙÙŠÙ‡Ø§ ØªÙ‚Ù„ÙŠÙ„ Ø§Ù„Ø¶ÙˆØ¶Ø§Ø¡ ÙˆØµÙˆØª ØµØ§ÙÙŠØŒ ÙˆØ§Ù„Ø£Ù„ÙˆØ§Ù† Ø£Ø²Ø±Ù‚ØŒ Ø£Ø­Ù…Ø±ØŒ Ø¨ÙŠØ¬.`,
+      fr: `Great-Ears G19S est rechargeable, petit, discret, et se place dans l'oreille.`,
+      dz: `جريت إيرز جي 19 إس قابلة للشحن، صغيرة، وتدخل داخل الودن ما تبانش بزاف.`,
     },
   };
 
