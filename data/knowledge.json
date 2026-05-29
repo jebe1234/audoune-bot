@@ -70,7 +70,11 @@
       "If the user writes in French, answer in natural French.",
       "If the user writes in Arabic or Darija, answer in Arabic script only, except Western digits and the brand name Audoune are allowed.",
       "Never write the brand name in Arabic. Always write it exactly as Audoune.",
-      "Do not use Arabic-Indic digits. Use 14500, 58, 24, 48, 20, 2, 1.9, 13485."
+      "Do not use Arabic-Indic digits. Use 14500, 58, 24, 48, 20, 2, 1.9, 13485.",
+      "Use native Algerian commerce words: كولي for package, كوموند for order, ليفرور for delivery guy, الدراهم for money, مريغلة for done.",
+      "Avoid non-Algerian words: كوليس, كوماند, ساعي, فلوس, سافي, دابا, ديال, ديالك.",
+      "Use hearing words customers understand: السمع, الودن, ضعف السمع, ما يسمعش, ما يفهمش الهدرة, يرفع الصوت, الودن تقرقر.",
+      "Use short natural templates: السومة 14500 دج، والتوصيل مجاني لقاع الولايات. / الكولي يوصلك في 24 حتى 48 ساعة، والدفع يد بيد. / مريغلة، ابعث الاسم ورقم الهاتف والولاية."
     ],
     "medical_safety": [
       "Never say the product cures hearing loss.",
@@ -279,7 +283,7 @@
       "id": "faq_price",
       "question_summary": "Price",
       "answer_fr": "Le Great-Ears G19S est à 14500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait à la livraison.",
-      "answer_ar": "جريت إيرز جي 19 إس بسومة 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون كي توصلك السماعة.",
+      "answer_ar": "السومة 14500 دج، والتوصيل مجاني لقاع الولايات. الدفع يكون كي يوصلك الكولي.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
@@ -288,7 +292,7 @@
       "id": "faq_delivery",
       "question_summary": "Delivery",
       "answer_fr": "La livraison est gratuite dans les 58 wilayas. Le délai habituel est de 24 à 48 heures après confirmation.",
-      "answer_ar": "التوصيل مجاني لكل 58 ولاية. المدة عادة من 24 حتى 48 ساعة بعد تأكيد الطلب.",
+      "answer_ar": "التوصيل مجاني لقاع الولايات. الكولي يوصلك في 24 حتى 48 ساعة بعد تأكيد الكوموند.",
       "category": "delivery",
       "confidence": "high",
       "source": "admin"
@@ -297,7 +301,7 @@
       "id": "faq_payment",
       "question_summary": "Cash on delivery",
       "answer_fr": "Le paiement se fait à la livraison seulement. Vous ne payez rien en ligne.",
-      "answer_ar": "الدفع عند الاستلام فقط. ما تخلص والو أونلاين، تخلص غير كي يوصلك الساعي.",
+      "answer_ar": "الدفع عند التوصيل يد بيد. ما تخلص والو من قبل، تخلص غير كي يوصلك الليفرور.",
       "category": "payment",
       "confidence": "high",
       "source": "admin"
@@ -351,7 +355,7 @@
       "id": "faq_too_expensive",
       "question_summary": "Objection: too expensive",
       "answer_fr": "Je comprends. Le prix inclut la livraison gratuite, un appareil rechargeable, discret, et le paiement à la livraison. Vous ne payez rien avant réception.",
-      "answer_ar": "نفهمك. هادي قابلة للشحن وما تحتاجش تبدل البطاريات كل مرة، صغيرة وتدخل داخل الودن، والتوصيل مجاني حتى لباب الدار في 58 ولاية. وتخلص غير كي توصلك وتشوفها.",
+      "answer_ar": "نفهمك. هادي قابلة للشحن وصوتها صافي، والتوصيل مجاني لقاع الولايات. وتخلص غير كي يوصلك الكولي وتشوفه.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
@@ -360,7 +364,7 @@
       "id": "faq_scared_scam",
       "question_summary": "Objection: fear of scam",
       "answer_fr": "Votre inquiétude est normale. Avec Audoune, vous ne payez rien à l'avance. Le paiement se fait à la livraison seulement, et notre équipe reste disponible pour vous accompagner.",
-      "answer_ar": "عندك الحق تخاف، بزاف ناس ولاو يحتاطو. معانا ما تخلص والو من قبل، الدفع كي توصلك فقط. التوصيل لباب الدار، وتشوف المنتج قدامك، وإذا كان كاين مشكل في المنتج تعاونك الخدمة تاعنا.",
+      "answer_ar": "عندك الحق تخاف. ما تخلص والو من قبل، الدفع يد بيد كي يوصلك الليفرور بالكولي حتى لباب الدار.",
       "category": "trust",
       "confidence": "high",
       "source": "admin"

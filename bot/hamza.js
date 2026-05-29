@@ -562,11 +562,11 @@ async function handlePostback(senderId, postback) {
   const RESPONSES = {
     PRICE_ORDER: {
       fr: `Le Great-Ears G19S est à 14500 DA, livraison gratuite dans les 58 wilayas.`,
-      dz: `السومة 14500 دج، والتوصيل مجاني لكل 58 ولاية.`,
+      dz: `السومة 14500 دج، والتوصيل مجاني لقاع الولايات.`,
     },
     DELIVERY: {
       fr: `Livraison gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures.`,
-      dz: `التوصيل مجاني لكل 58 ولاية. المدة غالبا من 24 حتى 48 ساعة.`,
+      dz: `التوصيل مجاني لقاع الولايات. الكولي يوصلك في 24 حتى 48 ساعة.`,
     },
     EFFECTIVENESS: {
       fr: `L'audition est faible, moyenne, ou très faible?`,
