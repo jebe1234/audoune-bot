@@ -165,16 +165,20 @@ app.get('/diag', async (req, res) => {
     status.GEMINI_TEST = 'FAIL ❌ ' + e.message.substring(0, 60);
   }
 
-  // Quick Facebook Send API test (typing indicator — no visible message)
+  // Quick Facebook token test without messaging a customer.
   try {
     const axios = require('axios');
-    await axios.post('https://graph.facebook.com/v19.0/me/messages',
-      { recipient: { id: '28069966095939197' }, sender_action: 'typing_on' },
-      { params: { access_token: process.env.PAGE_ACCESS_TOKEN } }
-    );
-    status.FACEBOOK_SEND_API = 'PASS ✅';
+    await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
+      params: {
+        access_token: process.env.PAGE_ACCESS_TOKEN,
+        limit: 1,
+        fields: 'id,updated_time',
+      },
+      timeout: 15000,
+    });
+    status.FACEBOOK_TOKEN = 'PASS ✅';
   } catch(e) {
-    status.FACEBOOK_SEND_API = 'FAIL ❌ ' + (e.response?.data?.error?.message || e.message).substring(0, 60);
+    status.FACEBOOK_TOKEN = 'FAIL ❌ ' + (e.response?.data?.error?.message || e.message).substring(0, 80);
   }
 
   res.json(status);
