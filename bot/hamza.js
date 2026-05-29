@@ -11,6 +11,7 @@ const path                                    = require('path');
 const { generateResponse }                    = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
+const { extractPhoneNumbers, appendLeadToSheet } = require('./sheets');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
 
 // â”€â”€â”€ In-memory user sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -200,6 +201,31 @@ function isPhotoRequest(text) {
   return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها|نشوفو|ابعثلي|ابعتلي)/i.test(text);
 }
 
+async function logPhonesFromMessage(senderId, session, text) {
+  const phones = extractPhoneNumbers(text);
+  if (!phones.length) return;
+
+  for (const phone of phones) {
+    rememberFact(session, 'order_phone', phone);
+    session.orderBuffer.phone = phone;
+
+    try {
+      await appendLeadToSheet({
+        phone,
+        messenger_id: senderId,
+        name: session.orderBuffer.name || session.memory?.facts?.order_name || '',
+        wilaya: session.orderBuffer.wilaya || session.memory?.facts?.order_wilaya || '',
+        language: session.language || '',
+        last_message: text,
+        created_at: new Date().toISOString(),
+      });
+      console.log(`Lead phone sent to Google Sheet for ${senderId}: ${phone}`);
+    } catch (err) {
+      console.error('Google Sheet lead append failed:', err.response?.data || err.message);
+    }
+  }
+}
+
 function isPhoneRequest(text) {
   return /(phone|number|call|tel|t[eé]l[eé]phone|num[eé]ro|appel|appeler|رقم|نمرا|نمروا|تليفون|هاتف|عيط|نتصل|اتصل|نكلم|كول)/i.test(text);
 }
@@ -346,6 +372,8 @@ async function processMessage(senderId, message) {
   }
 
   if (!text) return;
+
+  await logPhonesFromMessage(senderId, session, text);
 
   // â”€â”€ Admin command handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isAdmin(senderId) && text.startsWith('!')) {
@@ -510,6 +538,7 @@ async function processMessage(senderId, message) {
 
     const buf = session.orderBuffer;
     if (buf.name && buf.phone && buf.wilaya) {
+      await logPhonesFromMessage(senderId, session, buf.phone);
       // Complete order â€” notify admin
       await notifyAdminOrder(buf, senderId);
       session.orderBuffer = {}; // Reset
