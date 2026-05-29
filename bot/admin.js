@@ -45,8 +45,10 @@ async function handleAdminCommand(senderId, text) {
       `✅ !approve [id] — Approuver un fait\n` +
       `✏️  !correct [id] [réponse] — Corriger et approuver\n` +
       `📝 !learn [Q] = [A] — Enseigner un fait manuellement\n` +
+      `🔐 I'm the admin — Activer le mode apprentissage naturel\n` +
       `❓ !help — Afficher cette aide\n\n` +
-      `Exemple: !learn Garantie = 6 mois de garantie constructeur`
+      `Exemple: !learn Garantie = 6 mois de garantie constructeur\n` +
+      `En mode admin: learn maximum = réponse`
     );
     return;
   }

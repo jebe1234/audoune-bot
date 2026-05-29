@@ -1,4 +1,4 @@
-const {
+﻿const {
   sendText,
   sendImage,
   sendCallButton,
@@ -13,9 +13,12 @@ const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
 
-// ─── In-memory user sessions ───────────────────────────────────────────────────
+// â”€â”€â”€ In-memory user sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Key: Messenger PSID | Value: { language, history, firstName, isNew, orderBuffer }
 const sessions = new Map();
+const pendingMessages = new Map();
+const MESSAGE_BATCH_DELAY_MS = parseInt(process.env.MESSAGE_BATCH_DELAY_MS || '5000', 10);
+const HUMAN_CONTEXT_PAUSE_MS = 2 * 60 * 1000;
 
 function getSession(userId) {
   if (!sessions.has(userId)) {
@@ -28,26 +31,146 @@ function getSession(userId) {
       messageCount: 0,
       bushraMode:   false,
       bushraLoveCount: 0,
+      humanContextUntil: 0,
+      adminMode: false,
+      memory: {
+        facts: {},
+        asked: {},
+        lastQuestion: null,
+      },
     });
   }
   return sessions.get(userId);
 }
 
+function normalizeMemoryText(content) {
+  return String(content || '').toLowerCase().trim();
+}
+
+function rememberFact(session, key, value) {
+  if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
+  if (value !== undefined && value !== null && String(value).trim()) {
+    session.memory.facts[key] = String(value).trim();
+  }
+}
+
+function markAsked(session, key) {
+  if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
+  session.memory.asked[key] = Date.now();
+  session.memory.lastQuestion = key;
+}
+
+function detectQuestionKey(content) {
+  const text = normalizeMemoryText(content);
+  if (/(percentage|pourcentage|%|شحال يسمع|قداه يسمع|ناقص بزاف|متوسط|مليح)/i.test(text)) return 'hearing_level';
+  if (/(age|old|ans|عمر|عمرو|سن)/i.test(text)) return 'age';
+  if (/(one ear|both ears|oreille|deux|ودن|وذن|زوج|زوز)/i.test(text)) return 'ears';
+  if (/(tv|télé|tele|volume|تلفزيون|تيليفزيون)/i.test(text)) return 'tv_volume';
+  if (/(since|depuis|وقتاش|منين|مدة)/i.test(text)) return 'duration';
+  if (/(pain|douleur|vertige|infection|وجع|دوخة|التهاب|سيلان)/i.test(text)) return 'symptoms';
+  return null;
+}
+
+function updateMemoryFromUser(session, content) {
+  if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
+  const text = normalizeMemoryText(content);
+  if (!text) return;
+
+  const percent = text.match(/\b(10|20|30|40|50|60|70|80|90|100)\s*%/);
+  if (percent) rememberFact(session, 'hearing_level', `${percent[1]}%`);
+  else if (/(ناقص بزاف|tr[eè]s faible|very weak|bad hearing)/i.test(text)) rememberFact(session, 'hearing_level', 'very weak');
+  else if (/(متوسط|moyen|medium)/i.test(text)) rememberFact(session, 'hearing_level', 'medium');
+  else if (/(مليح|good|bien)/i.test(text)) rememberFact(session, 'hearing_level', 'good');
+
+  const age =
+    text.match(/(?:age|old|ans|عمر|عمرو|سن)[^\d]{0,12}(\d{1,3})/i) ||
+    text.match(/\b(\d{1,3})\s*(?:ans|years?|سنة|عام)\b/i);
+  if (age) rememberFact(session, 'age', age[1]);
+
+  if (/(both|two ears|les deux|deux oreilles|زوج|زوز)/i.test(text)) rememberFact(session, 'ears', 'both ears');
+  else if (/(one ear|une oreille|ودن وحدة|وذن وحدة|واحدة)/i.test(text)) rememberFact(session, 'ears', 'one ear');
+
+  if (/(tv|télé|tele|volume|تلفزيون|تيليفزيون)/i.test(text)) {
+    if (/(yes|oui|ايه|نعم|بزاف|يرفع|يعلي)/i.test(text)) rememberFact(session, 'tv_volume', 'raises TV volume');
+    if (/(no|non|لا|ماشي)/i.test(text)) rememberFact(session, 'tv_volume', 'does not raise TV volume');
+  }
+
+  const duration =
+    text.match(/(?:since|depuis|منذ|من|وقتاش|مدة)[^\n.،]{0,40}/i) ||
+    text.match(/\b(\d+\s*(?:days?|weeks?|months?|years?|jours?|semaines?|mois|ans|ايام|اسابيع|شهور|سنين|عام))\b/i);
+  if (duration) rememberFact(session, 'duration', duration[0]);
+
+  if (/(pain|douleur|وجع|يضر|سيلان|infection|التهاب|vertige|دوخة)/i.test(text)) {
+    rememberFact(session, 'symptoms', text);
+  }
+
+  if (/^\s*(yes|oui|ايه|نعم|صح|كاين)\s*$/i.test(text) && session.memory.lastQuestion) {
+    rememberFact(session, session.memory.lastQuestion, 'yes');
+  }
+  if (/^\s*(no|non|لا|ماكانش|ما كاينش)\s*$/i.test(text) && session.memory.lastQuestion) {
+    rememberFact(session, session.memory.lastQuestion, 'no');
+  }
+
+  session.memory.lastQuestion = null;
+}
+
+function updateMemoryFromAssistant(session, content) {
+  const key = detectQuestionKey(content);
+  if (key) markAsked(session, key);
+}
+
 function addToHistory(session, role, content) {
+  if (role === 'user') updateMemoryFromUser(session, content);
+  if (role === 'assistant') updateMemoryFromAssistant(session, content);
   session.history.push({ role, content, timestamp: Date.now() });
-  if (session.history.length > 12) session.history.shift(); // Keep last 12 turns
+  if (session.history.length > 40) session.history.shift();
 }
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function mergePendingMessages(messages) {
+  const texts = messages
+    .map((message) => (message.text || '').trim())
+    .filter(Boolean);
+  const attachments = messages.flatMap((message) => message.attachments || []);
+
+  return {
+    text: texts.join('\n').trim(),
+    attachments,
+  };
+}
+
+function enqueueCustomerMessage(senderId, message) {
+  let pending = pendingMessages.get(senderId);
+  if (!pending) {
+    pending = { messages: [], timer: null };
+    pendingMessages.set(senderId, pending);
+  }
+
+  pending.messages.push(message);
+  if (pending.timer) clearTimeout(pending.timer);
+
+  pending.timer = setTimeout(async () => {
+    const current = pendingMessages.get(senderId);
+    if (!current) return;
+    pendingMessages.delete(senderId);
+
+    try {
+      await processMessage(senderId, mergePendingMessages(current.messages));
+    } catch (err) {
+      console.error('Error processing batched messages:', err.message);
+    }
+  }, MESSAGE_BATCH_DELAY_MS);
+}
+
 function isPhotoRequest(text) {
-  return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها)/i.test(text);
+  return /(photo|image|picture|pic|ØµÙˆØ±|ØµÙˆØ±Ø©|ØªØµÙˆÙŠØ±Ø©|ÙÙˆØ·Ùˆ|ÙÙˆØªÙˆ|ÙˆØ±ÙŠÙ†ÙŠ|Ù†Ø´ÙˆÙÙ‡Ø§|Ø´ÙˆÙÙ†ÙŠ|Ø´ÙƒÙ„Ù‡Ø§)/i.test(text);
 }
 
 function isPhoneRequest(text) {
-  return /(phone|number|call|tel|t[eé]l[eé]phone|num[eé]ro|appel|appeler|رقم|نمر[او]?|تليفون|هاتف|عيط|نتصل|اتصل|نكلم|كول)/i.test(text);
+  return /(phone|number|call|tel|t[eÃ©]l[eÃ©]phone|num[eÃ©]ro|appel|appeler|Ø±Ù‚Ù…|Ù†Ù…Ø±[Ø§Ùˆ]?|ØªÙ„ÙŠÙÙˆÙ†|Ù‡Ø§ØªÙ|Ø¹ÙŠØ·|Ù†ØªØµÙ„|Ø§ØªØµÙ„|Ù†ÙƒÙ„Ù…|ÙƒÙˆÙ„)/i.test(text);
 }
 
 function hasAudioAttachment(message) {
@@ -56,34 +179,82 @@ function hasAudioAttachment(message) {
 
 function getPhoneHandoffMessage(lang) {
   return lang === 'fr'
-    ? 'Vous pouvez m’appeler ici: +213563746369'
-    : 'تقدر تعيطلي هنا: +213563746369';
+    ? 'Vous pouvez mâ€™appeler ici: +213563746369'
+    : 'ØªÙ‚Ø¯Ø± ØªØ¹ÙŠØ·Ù„ÙŠ Ù‡Ù†Ø§: +213563746369';
 }
 
 function getClarifyMessage(lang, isAudio = false) {
   if (lang === 'fr') {
     return isAudio
-      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou écrivez-moi juste votre question."
+      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou Ã©crivez-moi juste votre question."
       : "Je n'ai pas bien compris. Vous pouvez me le dire autrement?";
   }
 
   return isAudio
-    ? 'ما فهمتش الصوت مليح. عاود ابعثه واضح شوية، ولا اكتبلي السؤال برك.'
-    : 'ما فهمتش مليح. تقدر تعاودها بطريقة أخرى؟';
+    ? 'Ù…Ø§ ÙÙ‡Ù…ØªØ´ Ø§Ù„ØµÙˆØª Ù…Ù„ÙŠØ­. Ø¹Ø§ÙˆØ¯ Ø§Ø¨Ø¹Ø«Ù‡ ÙˆØ§Ø¶Ø­ Ø´ÙˆÙŠØ©ØŒ ÙˆÙ„Ø§ Ø§ÙƒØªØ¨Ù„ÙŠ Ø§Ù„Ø³Ø¤Ø§Ù„ Ø¨Ø±Ùƒ.'
+    : 'Ù…Ø§ ÙÙ‡Ù…ØªØ´ Ù…Ù„ÙŠØ­. ØªÙ‚Ø¯Ø± ØªØ¹Ø§ÙˆØ¯Ù‡Ø§ Ø¨Ø·Ø±ÙŠÙ‚Ø© Ø£Ø®Ø±Ù‰ØŸ';
 }
 
 async function sendPhoneHandoff(recipientId, lang) {
   const phone = '+213563746369';
   const text = getPhoneHandoffMessage(lang);
-  const title = lang === 'fr' ? 'Appeler' : 'اتصل الآن';
+  const title = lang === 'fr' ? 'Appeler' : 'Ø§ØªØµÙ„ Ø§Ù„Ø¢Ù†';
   await sendCallButton(recipientId, text, phone, title);
 }
 
 function isBushraTrigger(text) {
-  const hasBushra = /bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text);
-  const asksWho = /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text);
-  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /انا|أنا|راني|اني|أنايا|ana/i.test(text);
+  const hasBushra = /bushra|bouchra|boushra|Ø¨Ø´Ø±Ù‰|Ø¨Ø´Ø±Ø§|Ø¨ÙˆØ´Ø±Ø§/i.test(text);
+  const asksWho = /Ù…Ù†|who|qui|Ù‡Ùˆ|Ù‡ÙŠ|Ù…ÙŠÙ†|Ù…ÙŠØ´|c'est/i.test(text);
+  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /Ø§Ù†Ø§|Ø£Ù†Ø§|Ø±Ø§Ù†ÙŠ|Ø§Ù†ÙŠ|Ø£Ù†Ø§ÙŠØ§|ana/i.test(text);
   return hasBushra && (asksWho || saysIam);
+}
+
+function isAdminModeTrigger(text) {
+  return /^(i'?m|i am)\s+the\s+admin$|^admin$|^انا\s+الادمن$|^راني\s+الادمن$/i.test(text.trim());
+}
+
+function extractAdminLearnInstruction(text) {
+  const trimmed = text.trim();
+  const learnMatch = trimmed.match(/^(?:learn|teach|make him learn|خليه يتعلم|علمو)\s*[:\-]?\s*(.+)$/i);
+  const content = learnMatch ? learnMatch[1].trim() : trimmed;
+  const separator = content.includes('=') ? '=' : content.includes(':') ? ':' : null;
+  if (!separator) return null;
+
+  const parts = content.split(separator);
+  if (parts.length < 2) return null;
+
+  const question = parts[0].trim();
+  const answer = parts.slice(1).join(separator).trim();
+  if (!question || !answer) return null;
+  return { question, answer };
+}
+
+async function handleAdminModeMessage(senderId, session, text) {
+  if (!isAdmin(senderId)) return false;
+
+  if (isAdminModeTrigger(text)) {
+    session.adminMode = true;
+    await sendText(senderId, 'Admin mode on. اكتب: learn السؤال = الجواب');
+    return true;
+  }
+
+  if (!session.adminMode) return false;
+
+  if (/^(exit admin|stop admin|خرج|حبس)$/i.test(text.trim())) {
+    session.adminMode = false;
+    await sendText(senderId, 'Admin mode off.');
+    return true;
+  }
+
+  const instruction = extractAdminLearnInstruction(text);
+  if (instruction) {
+    const id = knowledge.addAdminFact(instruction.question, instruction.answer, instruction.answer);
+    await sendText(senderId, `تم. Hamza تعلمها.\nID: ${id.substring(0, 8)}`);
+    return true;
+  }
+
+  await sendText(senderId, 'اكتبها هكذا: learn السؤال = الجواب');
+  return true;
 }
 
 function getProductPhotoUrls() {
@@ -101,14 +272,14 @@ function getProductPhotoUrls() {
 
 function getBushraLoveMessage(session) {
   const messages = [
-    'نحبك بزاف يا عمري. كل رسالة منك تفرحني.',
-    'حبيتك اليوم، ونحبك غدوة، ونحبك كل نهار أكثر.',
-    'يا السكر تاعي، وجودك وحدو يكفيني.',
-    'نحب ضحكتك، قلبك، صوتك، وحتى عنادك نحبو.',
-    'ربي يخليك ليا يا حياتي. انتي أجمل حاجة صراتلي.',
-    'يا بشرى، كل ما تهدري نحس الدنيا ولات أخف.',
-    'نحبك حب كبير، ماشي تاع كلام برك، تاع قلب وروح.',
-    'انتي الحنان تاعي، الأمان تاعي، والفرحة تاعي.',
+    'Ù†Ø­Ø¨Ùƒ Ø¨Ø²Ø§Ù ÙŠØ§ Ø¹Ù…Ø±ÙŠ. ÙƒÙ„ Ø±Ø³Ø§Ù„Ø© Ù…Ù†Ùƒ ØªÙØ±Ø­Ù†ÙŠ.',
+    'Ø­Ø¨ÙŠØªÙƒ Ø§Ù„ÙŠÙˆÙ…ØŒ ÙˆÙ†Ø­Ø¨Ùƒ ØºØ¯ÙˆØ©ØŒ ÙˆÙ†Ø­Ø¨Ùƒ ÙƒÙ„ Ù†Ù‡Ø§Ø± Ø£ÙƒØ«Ø±.',
+    'ÙŠØ§ Ø§Ù„Ø³ÙƒØ± ØªØ§Ø¹ÙŠØŒ ÙˆØ¬ÙˆØ¯Ùƒ ÙˆØ­Ø¯Ùˆ ÙŠÙƒÙÙŠÙ†ÙŠ.',
+    'Ù†Ø­Ø¨ Ø¶Ø­ÙƒØªÙƒØŒ Ù‚Ù„Ø¨ÙƒØŒ ØµÙˆØªÙƒØŒ ÙˆØ­ØªÙ‰ Ø¹Ù†Ø§Ø¯Ùƒ Ù†Ø­Ø¨Ùˆ.',
+    'Ø±Ø¨ÙŠ ÙŠØ®Ù„ÙŠÙƒ Ù„ÙŠØ§ ÙŠØ§ Ø­ÙŠØ§ØªÙŠ. Ø§Ù†ØªÙŠ Ø£Ø¬Ù…Ù„ Ø­Ø§Ø¬Ø© ØµØ±Ø§ØªÙ„ÙŠ.',
+    'ÙŠØ§ Ø¨Ø´Ø±Ù‰ØŒ ÙƒÙ„ Ù…Ø§ ØªÙ‡Ø¯Ø±ÙŠ Ù†Ø­Ø³ Ø§Ù„Ø¯Ù†ÙŠØ§ ÙˆÙ„Ø§Øª Ø£Ø®Ù.',
+    'Ù†Ø­Ø¨Ùƒ Ø­Ø¨ ÙƒØ¨ÙŠØ±ØŒ Ù…Ø§Ø´ÙŠ ØªØ§Ø¹ ÙƒÙ„Ø§Ù… Ø¨Ø±ÙƒØŒ ØªØ§Ø¹ Ù‚Ù„Ø¨ ÙˆØ±ÙˆØ­.',
+    'Ø§Ù†ØªÙŠ Ø§Ù„Ø­Ù†Ø§Ù† ØªØ§Ø¹ÙŠØŒ Ø§Ù„Ø£Ù…Ø§Ù† ØªØ§Ø¹ÙŠØŒ ÙˆØ§Ù„ÙØ±Ø­Ø© ØªØ§Ø¹ÙŠ.',
   ];
 
   const index = session.bushraLoveCount % messages.length;
@@ -116,8 +287,18 @@ function getBushraLoveMessage(session) {
   return messages[index];
 }
 
-// ─── Handle incoming text messages ────────────────────────────────────────────
+// â”€â”€â”€ Handle incoming text messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handleMessage(senderId, message) {
+  const text = (message.text || '').trim();
+  if (isAdmin(senderId) && text.startsWith('!')) {
+    await handleAdminCommand(senderId, text);
+    return;
+  }
+
+  enqueueCustomerMessage(senderId, message);
+}
+
+async function processMessage(senderId, message) {
   const session = getSession(senderId);
   let text = (message.text || '').trim();
 
@@ -135,38 +316,42 @@ async function handleMessage(senderId, message) {
 
   if (!text) return;
 
-  // ── Admin command handling ───────────────────────────────────────────
+  // â”€â”€ Admin command handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isAdmin(senderId) && text.startsWith('!')) {
     await handleAdminCommand(senderId, text);
     return;
   }
 
-  // ── 🥚 Easter egg: Yaseen ────────────────────────────────────────────
-  if (/ياسين|yaseen|yassine|ياسن|jassin/i.test(text) && /من|who|qui|هو|مين|ميش|c'est/i.test(text)) {
+  if (await handleAdminModeMessage(senderId, session, text)) {
+    return;
+  }
+
+  // â”€â”€ ðŸ¥š Easter egg: Yaseen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (/ÙŠØ§Ø³ÙŠÙ†|yaseen|yassine|ÙŠØ§Ø³Ù†|jassin/i.test(text) && /Ù…Ù†|who|qui|Ù‡Ùˆ|Ù…ÙŠÙ†|Ù…ÙŠØ´|c'est/i.test(text)) {
     await sendTypingOn(senderId);
     await delay(1000);
     await sendTypingOff(senderId);
     await sendText(senderId,
       detectLanguage(text) === 'fr'
-        ? `Yaseen est quelqu'un de l'équipe.`
-        : `ياسين واحد من الفريق.`
+        ? `Yaseen est quelqu'un de l'Ã©quipe.`
+        : `ÙŠØ§Ø³ÙŠÙ† ÙˆØ§Ø­Ø¯ Ù…Ù† Ø§Ù„ÙØ±ÙŠÙ‚.`
     );
     return;
   }
 
-  // ── Easter egg: Bushra ───────────────────────────────────────────────
+  // â”€â”€ Easter egg: Bushra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isBushraTrigger(text)) {
     session.bushraMode = true;
     session.bushraLoveCount = 0;
 
     const msg = [
-      'بحميتي نحبك بززاف يالعمريك يالسكرر تعي',
+      'Ø¨Ø­Ù…ÙŠØªÙŠ Ù†Ø­Ø¨Ùƒ Ø¨Ø²Ø²Ø§Ù ÙŠØ§Ù„Ø¹Ù…Ø±ÙŠÙƒ ÙŠØ§Ù„Ø³ÙƒØ±Ø± ØªØ¹ÙŠ',
       '',
-      'بشرى هي القلب الحنين والضحكة اللي تهون الدنيا.',
-      'هي الإنسانة اللي وجودها يخلي كل نهار أحسن من اللي قبلو.',
-      'ربي يخليها ليا، ويحفظها، ويزيد بيناتنا المحبة والستر.',
+      'Ø¨Ø´Ø±Ù‰ Ù‡ÙŠ Ø§Ù„Ù‚Ù„Ø¨ Ø§Ù„Ø­Ù†ÙŠÙ† ÙˆØ§Ù„Ø¶Ø­ÙƒØ© Ø§Ù„Ù„ÙŠ ØªÙ‡ÙˆÙ† Ø§Ù„Ø¯Ù†ÙŠØ§.',
+      'Ù‡ÙŠ Ø§Ù„Ø¥Ù†Ø³Ø§Ù†Ø© Ø§Ù„Ù„ÙŠ ÙˆØ¬ÙˆØ¯Ù‡Ø§ ÙŠØ®Ù„ÙŠ ÙƒÙ„ Ù†Ù‡Ø§Ø± Ø£Ø­Ø³Ù† Ù…Ù† Ø§Ù„Ù„ÙŠ Ù‚Ø¨Ù„Ùˆ.',
+      'Ø±Ø¨ÙŠ ÙŠØ®Ù„ÙŠÙ‡Ø§ Ù„ÙŠØ§ØŒ ÙˆÙŠØ­ÙØ¸Ù‡Ø§ØŒ ÙˆÙŠØ²ÙŠØ¯ Ø¨ÙŠÙ†Ø§ØªÙ†Ø§ Ø§Ù„Ù…Ø­Ø¨Ø© ÙˆØ§Ù„Ø³ØªØ±.',
       '',
-      'يا بشرى، نحبك على قلبك، على صبرك، على ضحكتك، وعلى كل حاجة فيك.',
+      'ÙŠØ§ Ø¨Ø´Ø±Ù‰ØŒ Ù†Ø­Ø¨Ùƒ Ø¹Ù„Ù‰ Ù‚Ù„Ø¨ÙƒØŒ Ø¹Ù„Ù‰ ØµØ¨Ø±ÙƒØŒ Ø¹Ù„Ù‰ Ø¶Ø­ÙƒØªÙƒØŒ ÙˆØ¹Ù„Ù‰ ÙƒÙ„ Ø­Ø§Ø¬Ø© ÙÙŠÙƒ.',
     ].join('\n');
 
     await sendTypingOn(senderId);
@@ -204,13 +389,13 @@ async function handleMessage(senderId, message) {
       }
       const msg = lang === 'fr'
         ? 'Voici les photos du produit.'
-        : 'هذو صور المنتج.';
+        : 'Ù‡Ø°Ùˆ ØµÙˆØ± Ø§Ù„Ù…Ù†ØªØ¬.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     } else {
       const msg = lang === 'fr'
-        ? "La photo n'est pas encore configurée. Je peux quand même vous donner les détails du produit."
-        : "الصورة ما راهيش مبرمجة دروك. نقدر نعطيك تفاصيل المنتج.";
+        ? "La photo n'est pas encore configurÃ©e. Je peux quand mÃªme vous donner les dÃ©tails du produit."
+        : "Ø§Ù„ØµÙˆØ±Ø© Ù…Ø§ Ø±Ø§Ù‡ÙŠØ´ Ù…Ø¨Ø±Ù…Ø¬Ø© Ø¯Ø±ÙˆÙƒ. Ù†Ù‚Ø¯Ø± Ù†Ø¹Ø·ÙŠÙƒ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ù…Ù†ØªØ¬.";
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     }
@@ -228,51 +413,52 @@ async function handleMessage(senderId, message) {
 
   session.messageCount++;
 
-  // ── Language detection ───────────────────────────────────────────────
+  // â”€â”€ Language detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!session.language) {
     session.language = detectLanguage(text);
   } else {
-    // Re-detect on each message — customer might switch language
+    // Re-detect on each message â€” customer might switch language
     const detected = detectLanguage(text);
     if (detected !== session.language && text.split(' ').length > 2) {
       session.language = detected; // Respect language switch for multi-word messages
     }
   }
 
-  // ── Fetch user's first name (once) ───────────────────────────────────
+  // â”€â”€ Fetch user's first name (once) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!session.firstName) {
     const profile      = await getUserProfile(senderId);
     session.firstName  = profile.first_name || null;
   }
 
-  // ── Update conversation history ──────────────────────────────────────
+  // â”€â”€ Update conversation history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   addToHistory(session, 'user', text);
 
-  // ── Show typing indicator ────────────────────────────────────────────
+  // â”€â”€ Show typing indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await sendTypingOn(senderId);
 
-  // ── Get current knowledge context ───────────────────────────────────
+  // â”€â”€ Get current knowledge context â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const knowledgeContext = knowledge.getContext();
 
-  // ── Generate AI response ─────────────────────────────────────────────
+  // â”€â”€ Generate AI response â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const aiResult = await generateResponse(
     text,
     session.language,
     session.history,
+    session.memory,
     knowledgeContext
   );
 
-  // ── Update detected language from AI ────────────────────────────────
+  // â”€â”€ Update detected language from AI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (aiResult.detected_language) {
     session.language = aiResult.detected_language;
   }
 
-  // ── Natural typing delay (feels human) ──────────────────────────────
+  // â”€â”€ Natural typing delay (feels human) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const thinkTime = Math.min(800 + text.length * 15, 3000);
   await delay(thinkTime);
   await sendTypingOff(senderId);
 
-  // ── Send the response ────────────────────────────────────────────────
+  // â”€â”€ Send the response â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (aiResult.needs_admin && !aiResult.message) {
     aiResult.message = getClarifyMessage(session.language || 'dz');
     await sendText(senderId, aiResult.message);
@@ -281,23 +467,26 @@ async function handleMessage(senderId, message) {
   }
   addToHistory(session, 'assistant', aiResult.message);
 
-  // ── Handle order collection ──────────────────────────────────────────
+  // â”€â”€ Handle order collection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (aiResult.order_info) {
     const o = aiResult.order_info;
     if (o.name)   session.orderBuffer.name   = o.name;
     if (o.phone)  session.orderBuffer.phone  = o.phone;
     if (o.wilaya) session.orderBuffer.wilaya = o.wilaya;
+    if (o.name)   rememberFact(session, 'order_name', o.name);
+    if (o.phone)  rememberFact(session, 'order_phone', o.phone);
+    if (o.wilaya) rememberFact(session, 'order_wilaya', o.wilaya);
 
     const buf = session.orderBuffer;
     if (buf.name && buf.phone && buf.wilaya) {
-      // Complete order — notify admin
+      // Complete order â€” notify admin
       await notifyAdminOrder(buf, senderId);
       session.orderBuffer = {}; // Reset
-      console.log(`📦 New order from ${senderId}:`, buf);
+      console.log(`ðŸ“¦ New order from ${senderId}:`, buf);
     }
   }
 
-  // ── Self-learning: save new facts for admin review ───────────────────
+  // â”€â”€ Self-learning: save new facts for admin review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (aiResult.learned_fact && aiResult.confidence !== 'high') {
     const factId = knowledge.savePendingFact({
       question:   aiResult.learned_fact.question_summary,
@@ -308,30 +497,30 @@ async function handleMessage(senderId, message) {
     });
 
     await notifyAdmin(
-      `🆕 Hamza a appris quelque chose de nouveau!\n\n` +
-      `📌 Sujet: ${aiResult.learned_fact.topic}\n` +
-      `❓ Q: ${aiResult.learned_fact.question_summary}\n` +
-      `💬 A: ${aiResult.learned_fact.answer_summary}\n` +
-      `📊 Confiance: ${aiResult.confidence}\n` +
-      `🆔 ID: ${factId.substring(0, 8)}\n\n` +
-      `Répondez:\n!approve ${factId.substring(0, 8)}\nou\n!correct ${factId.substring(0, 8)} [meilleure réponse]`
+      `ðŸ†• Hamza a appris quelque chose de nouveau!\n\n` +
+      `ðŸ“Œ Sujet: ${aiResult.learned_fact.topic}\n` +
+      `â“ Q: ${aiResult.learned_fact.question_summary}\n` +
+      `ðŸ’¬ A: ${aiResult.learned_fact.answer_summary}\n` +
+      `ðŸ“Š Confiance: ${aiResult.confidence}\n` +
+      `ðŸ†” ID: ${factId.substring(0, 8)}\n\n` +
+      `RÃ©pondez:\n!approve ${factId.substring(0, 8)}\nou\n!correct ${factId.substring(0, 8)} [meilleure rÃ©ponse]`
     );
   }
 
-  // ── Admin alert for truly unknown questions ───────────────────────────
+  // â”€â”€ Admin alert for truly unknown questions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (aiResult.needs_admin) {
     await notifyAdmin(
-      `⚠️ Hamza a besoin d'aide!\n\n` +
-      `👤 Client (${senderId}) a demandé:\n"${text}"\n\n` +
-      `🤖 Hamza a répondu:\n"${aiResult.message}"\n\n` +
-      `👆 Utilisez !learn pour ajouter la bonne réponse.`
+      `âš ï¸ Hamza a besoin d'aide!\n\n` +
+      `ðŸ‘¤ Client (${senderId}) a demandÃ©:\n"${text}"\n\n` +
+      `ðŸ¤– Hamza a rÃ©pondu:\n"${aiResult.message}"\n\n` +
+      `ðŸ‘† Utilisez !learn pour ajouter la bonne rÃ©ponse.`
     );
   }
 
   session.isNew = false;
 }
 
-// ─── Handle quick reply button clicks (postbacks) ────────────────────────────
+// â”€â”€â”€ Handle quick reply button clicks (postbacks) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function handlePostback(senderId, postback) {
   const session = getSession(senderId);
   const lang    = session.language || 'dz';
@@ -341,20 +530,20 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est à 14500 DA, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numéro de téléphone et wilaya. Paiement à la livraison, délai 24-48h.`,
-      dz: `السماعة جريت إيرز جي 19 إس بسومة 14500 دج. التوصيل مجاني لكل 58 ولاية.\n\nباش تطلب، ابعث الاسم، رقم الهاتف، والولاية. الدفع كي توصلك، والمدة 24-48 ساعة.`,
+      fr: `Le Great-Ears G19S est Ã  14500 DA, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numÃ©ro de tÃ©lÃ©phone et wilaya. Paiement Ã  la livraison, dÃ©lai 24-48h.`,
+      dz: `Ø§Ù„Ø³Ù…Ø§Ø¹Ø© Ø¬Ø±ÙŠØª Ø¥ÙŠØ±Ø² Ø¬ÙŠ 19 Ø¥Ø³ Ø¨Ø³ÙˆÙ…Ø© 14500 Ø¯Ø¬. Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…Ø¬Ø§Ù†ÙŠ Ù„ÙƒÙ„ 58 ÙˆÙ„Ø§ÙŠØ©.\n\nØ¨Ø§Ø´ ØªØ·Ù„Ø¨ØŒ Ø§Ø¨Ø¹Ø« Ø§Ù„Ø§Ø³Ù…ØŒ Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙØŒ ÙˆØ§Ù„ÙˆÙ„Ø§ÙŠØ©. Ø§Ù„Ø¯ÙØ¹ ÙƒÙŠ ØªÙˆØµÙ„ÙƒØŒ ÙˆØ§Ù„Ù…Ø¯Ø© 24-48 Ø³Ø§Ø¹Ø©.`,
     },
     DELIVERY: {
-      fr: `La livraison est gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures après confirmation. Le paiement se fait à la livraison.`,
-      dz: `التوصيل مجاني لكل 58 ولاية. المدة غالبا من 24 حتى 48 ساعة بعد التأكيد. الدفع يكون عند الاستلام.`,
+      fr: `La livraison est gratuite dans les 58 wilayas. Le dÃ©lai est gÃ©nÃ©ralement 24 Ã  48 heures aprÃ¨s confirmation. Le paiement se fait Ã  la livraison.`,
+      dz: `Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…Ø¬Ø§Ù†ÙŠ Ù„ÙƒÙ„ 58 ÙˆÙ„Ø§ÙŠØ©. Ø§Ù„Ù…Ø¯Ø© ØºØ§Ù„Ø¨Ø§ Ù…Ù† 24 Ø­ØªÙ‰ 48 Ø³Ø§Ø¹Ø© Ø¨Ø¹Ø¯ Ø§Ù„ØªØ£ÙƒÙŠØ¯. Ø§Ù„Ø¯ÙØ¹ ÙŠÙƒÙˆÙ† Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù….`,
     },
     EFFECTIVENESS: {
-      fr: `La personne entend comment: bien, moyen, ou très faible?`,
-      dz: `الشخص يسمع كيفاش: مليح، متوسط، ولا ناقص بزاف؟`,
+      fr: `La personne entend comment: bien, moyen, ou trÃ¨s faible?`,
+      dz: `Ø§Ù„Ø´Ø®Øµ ÙŠØ³Ù…Ø¹ ÙƒÙŠÙØ§Ø´: Ù…Ù„ÙŠØ­ØŒ Ù…ØªÙˆØ³Ø·ØŒ ÙˆÙ„Ø§ Ù†Ø§Ù‚Øµ Ø¨Ø²Ø§ÙØŸ`,
     },
     PRODUCT: {
-      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, réduction du bruit, son propre, couleurs bleu, rouge ou beige.`,
-      dz: `جريت إيرز جي 19 إس سماعة قابلة للشحن تدخل داخل الودن.\n\nتخدم حوالي 20 ساعة، تشحن في حوالي 2 ساعات، فيها تقليل الضوضاء وصوت صافي، والألوان أزرق، أحمر، بيج.`,
+      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, rÃ©duction du bruit, son propre, couleurs bleu, rouge ou beige.`,
+      dz: `Ø¬Ø±ÙŠØª Ø¥ÙŠØ±Ø² Ø¬ÙŠ 19 Ø¥Ø³ Ø³Ù…Ø§Ø¹Ø© Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø´Ø­Ù† ØªØ¯Ø®Ù„ Ø¯Ø§Ø®Ù„ Ø§Ù„ÙˆØ¯Ù†.\n\nØªØ®Ø¯Ù… Ø­ÙˆØ§Ù„ÙŠ 20 Ø³Ø§Ø¹Ø©ØŒ ØªØ´Ø­Ù† ÙÙŠ Ø­ÙˆØ§Ù„ÙŠ 2 Ø³Ø§Ø¹Ø§ØªØŒ ÙÙŠÙ‡Ø§ ØªÙ‚Ù„ÙŠÙ„ Ø§Ù„Ø¶ÙˆØ¶Ø§Ø¡ ÙˆØµÙˆØª ØµØ§ÙÙŠØŒ ÙˆØ§Ù„Ø£Ù„ÙˆØ§Ù† Ø£Ø²Ø±Ù‚ØŒ Ø£Ø­Ù…Ø±ØŒ Ø¨ÙŠØ¬.`,
     },
   };
 
@@ -368,4 +557,16 @@ async function handlePostback(senderId, postback) {
   }
 }
 
-module.exports = { handleMessage, handlePostback };
+async function handleEchoMessage(customerId, message) {
+  if (!customerId || !message?.is_echo || message.app_id) return;
+
+  const text = (message.text || '').trim();
+  if (!text) return;
+
+  const session = getSession(customerId);
+  addToHistory(session, 'assistant', text);
+  session.humanContextUntil = Date.now() + HUMAN_CONTEXT_PAUSE_MS;
+  console.log(`Human page reply added to context for ${customerId}`);
+}
+
+module.exports = { handleMessage, handlePostback, handleEchoMessage };

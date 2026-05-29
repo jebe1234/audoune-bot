@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { handleMessage, handlePostback } = require('./bot/hamza');
+const { handleMessage, handlePostback, handleEchoMessage } = require('./bot/hamza');
 const { getMessengerStatus } = require('./bot/messenger');
 
 const app = express();
@@ -82,7 +82,9 @@ app.post('/webhook', async (req, res) => {
       try {
         if (alreadyProcessed(event)) continue;
 
-        if (event.message && !event.message.is_echo) {
+        if (event.message?.is_echo) {
+          await handleEchoMessage(event.recipient?.id, event.message);
+        } else if (event.message) {
           await handleMessage(event.sender.id, event.message);
         } else if (event.postback) {
           await handlePostback(event.sender.id, event.postback);
