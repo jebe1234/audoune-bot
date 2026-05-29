@@ -28,6 +28,7 @@ async function notifyAdminOrder(orderInfo, userId) {
     `👤 Client: ${orderInfo.name}\n` +
     `📞 Tel: ${orderInfo.phone}\n` +
     `📍 Wilaya: ${orderInfo.wilaya}\n` +
+    (orderInfo.address ? `🏠 Adresse: ${orderInfo.address}\n` : '') +
     `🆔 Messenger ID: ${userId}\n\n` +
     `✅ Confirmez et préparez la livraison!`
   );

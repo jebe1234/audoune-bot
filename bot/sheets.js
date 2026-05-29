@@ -35,7 +35,24 @@ async function appendLeadToSheet(lead) {
   return response.data;
 }
 
+function inferLeadStatus(text, lead = {}) {
+  if (lead.status) return lead.status;
+  if (hasLeadDetails(text, lead)) return 'he wants to order';
+  return 'status unknown';
+}
+
+function hasLeadDetails(text, lead = {}) {
+  const input = String(text || '').toLowerCase();
+  const hasOrderWords = /(نطلب|نحب نطلب|خلاص|ارسلي|ابعث|ابعت|كوموند|commande|order|نشري)/i.test(input);
+  const hasAddressWords = /(عنوان|العنوان|ولاية|بلدية|دايرة|دائرة|حي|شارع|المدية|الوادي|الجزائر|وهران|سطيف|عنابة|باتنة|بسكرة|مستغانم|تيارت|الجلفة|المغير)/i.test(input);
+  const hasNameWords = /(الاسم|اسمي|سمية|سميتي|name|nom)/i.test(input);
+  const hasStructuredOrder = Boolean(lead.client_name || lead.name || lead.wilaya || lead.address);
+  return hasStructuredOrder || hasOrderWords || (hasAddressWords && hasNameWords);
+}
+
 module.exports = {
   extractPhoneNumbers,
+  inferLeadStatus,
+  hasLeadDetails,
   appendLeadToSheet,
 };

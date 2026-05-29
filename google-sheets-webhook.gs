@@ -14,13 +14,18 @@ function doPost(e) {
     ensureHeader(sheet);
 
     const row = [
-      body.created_at || new Date().toISOString(),
+      body.profile_name || '',
+      body.client_name || body.name || '',
+      body.address || '',
       body.phone || '',
-      body.name || '',
+      body.status || '',
       body.wilaya || '',
       body.messenger_id || '',
+      body.product || 'Great-Ears G19S',
+      body.summary || '',
       body.language || '',
       body.last_message || '',
+      body.created_at || new Date().toISOString(),
       body.source || 'messenger',
     ];
 
@@ -41,10 +46,23 @@ function doPost(e) {
 }
 
 function ensureHeader(sheet) {
-  const headers = ['date', 'phone', 'name', 'wilaya', 'messenger_id', 'language', 'last_message', 'source'];
+  const headers = [
+    'profile_name',
+    'client_name',
+    'address',
+    'phone',
+    'status',
+    'wilaya',
+    'messenger_id',
+    'product',
+    'summary',
+    'language',
+    'last_message',
+    'date',
+    'source',
+  ];
   const current = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
-  const hasHeader = current.some(Boolean);
-  if (!hasHeader) sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  if (current[0] !== 'profile_name') sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 }
 
 function findExistingLeadRow(sheet, phone, messengerId) {
@@ -52,10 +70,10 @@ function findExistingLeadRow(sheet, phone, messengerId) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null;
 
-  const values = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 13).getValues();
   for (let i = 0; i < values.length; i += 1) {
-    const rowPhone = String(values[i][1] || '');
-    const rowMessengerId = String(values[i][4] || '');
+    const rowPhone = String(values[i][3] || '');
+    const rowMessengerId = String(values[i][6] || '');
     if ((phone && rowPhone === phone) || (messengerId && rowMessengerId === messengerId)) {
       return i + 2;
     }

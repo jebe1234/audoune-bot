@@ -11,7 +11,7 @@ const path                                    = require('path');
 const { generateResponse }                    = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
-const { extractPhoneNumbers, appendLeadToSheet } = require('./sheets');
+const { extractPhoneNumbers, inferLeadStatus, hasLeadDetails, appendLeadToSheet } = require('./sheets');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
 
 // â”€â”€â”€ In-memory user sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -19,6 +19,7 @@ const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('
 const sessions = new Map();
 const pendingMessages = new Map();
 const MESSAGE_BATCH_DELAY_MS = parseInt(process.env.MESSAGE_BATCH_DELAY_MS || '5000', 10);
+const PHONE_ONLY_LEAD_DELAY_MS = parseInt(process.env.PHONE_ONLY_LEAD_DELAY_MS || '240000', 10);
 const HUMAN_CONTEXT_PAUSE_MS = 2 * 60 * 1000;
 
 function getSession(userId) {
@@ -27,8 +28,10 @@ function getSession(userId) {
       language:     null,
       history:      [],
       firstName:    null,
+      profileName:  null,
       isNew:        true,
       orderBuffer:  {},     // Accumulates order details as customer provides them
+      pendingPhoneLeads: {},
       messageCount: 0,
       bushraMode:   false,
       bushraLoveCount: 0,
@@ -201,27 +204,104 @@ function isPhotoRequest(text) {
   return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها|نشوفو|ابعثلي|ابعتلي)/i.test(text);
 }
 
-async function logPhonesFromMessage(senderId, session, text) {
+async function ensureCustomerProfile(senderId, session) {
+  if (session.profileName) return;
+  const profile = await getUserProfile(senderId);
+  const first = profile.first_name || '';
+  const last = profile.last_name || '';
+  session.firstName = first || null;
+  session.profileName = `${first} ${last}`.trim();
+}
+
+function buildLead(senderId, session, phone, text, status = null) {
+  const lead = {
+    profile_name: session.profileName || '',
+    client_name: session.orderBuffer.name || session.memory?.facts?.order_name || '',
+    wilaya: session.orderBuffer.wilaya || session.memory?.facts?.order_wilaya || '',
+    address: session.orderBuffer.address || session.memory?.facts?.order_address || '',
+  };
+
+  return {
+    ...lead,
+    phone,
+    status: status || inferLeadStatus(text, lead),
+    messenger_id: senderId,
+    product: 'Great-Ears G19S',
+    summary: buildLeadSummary(session, text),
+    language: session.language || '',
+    last_message: text,
+    created_at: new Date().toISOString(),
+  };
+}
+
+function buildLeadSummary(session, text) {
+  const facts = session.memory?.facts || {};
+  const parts = [];
+  if (facts.hearing_level) parts.push(`hearing: ${facts.hearing_level}`);
+  if (facts.ears) parts.push(`ears: ${facts.ears}`);
+  if (facts.speech_clarity) parts.push('speech unclear');
+  if (facts.tv_volume) parts.push(`tv: ${facts.tv_volume}`);
+  if (facts.duration) parts.push(`duration: ${facts.duration}`);
+  if (facts.symptoms) parts.push(`symptoms: ${facts.symptoms}`);
+
+  const cleanMessage = String(text || '').replace(/\s+/g, ' ').trim();
+  if (cleanMessage) parts.push(`last: ${cleanMessage.slice(0, 120)}`);
+  return parts.join(' | ');
+}
+
+async function sendLeadToSheet(senderId, session, phone, text, status = null) {
+  try {
+    await ensureCustomerProfile(senderId, session);
+    await appendLeadToSheet(buildLead(senderId, session, phone, text, status));
+    console.log(`Lead phone sent to Google Sheet for ${senderId}: ${phone}`);
+  } catch (err) {
+    console.error('Google Sheet lead append failed:', err.response?.data || err.message);
+  }
+}
+
+function clearPendingPhoneLead(session, phone) {
+  const pending = session.pendingPhoneLeads?.[phone];
+  if (pending?.timer) clearTimeout(pending.timer);
+  if (session.pendingPhoneLeads) delete session.pendingPhoneLeads[phone];
+}
+
+function scheduleStatusUnknownLead(senderId, session, phone, text) {
+  clearPendingPhoneLead(session, phone);
+  session.pendingPhoneLeads[phone] = {
+    text,
+    timer: setTimeout(async () => {
+      const pending = session.pendingPhoneLeads?.[phone];
+      if (!pending) return;
+      delete session.pendingPhoneLeads[phone];
+      await sendLeadToSheet(senderId, session, phone, pending.text, 'status unknown');
+    }, PHONE_ONLY_LEAD_DELAY_MS),
+  };
+}
+
+async function flushPendingPhoneLeads(senderId, session, text) {
+  const phones = Object.keys(session.pendingPhoneLeads || {});
+  for (const phone of phones) {
+    clearPendingPhoneLead(session, phone);
+    await sendLeadToSheet(senderId, session, phone, text, 'he wants to order');
+  }
+}
+
+async function logPhonesFromMessage(senderId, session, text, options = {}) {
   const phones = extractPhoneNumbers(text);
   if (!phones.length) return;
+
+  await ensureCustomerProfile(senderId, session);
 
   for (const phone of phones) {
     rememberFact(session, 'order_phone', phone);
     session.orderBuffer.phone = phone;
 
-    try {
-      await appendLeadToSheet({
-        phone,
-        messenger_id: senderId,
-        name: session.orderBuffer.name || session.memory?.facts?.order_name || '',
-        wilaya: session.orderBuffer.wilaya || session.memory?.facts?.order_wilaya || '',
-        language: session.language || '',
-        last_message: text,
-        created_at: new Date().toISOString(),
-      });
-      console.log(`Lead phone sent to Google Sheet for ${senderId}: ${phone}`);
-    } catch (err) {
-      console.error('Google Sheet lead append failed:', err.response?.data || err.message);
+    const lead = buildLead(senderId, session, phone, text, options.status);
+    if (options.immediate || hasLeadDetails(text, lead)) {
+      clearPendingPhoneLead(session, phone);
+      await sendLeadToSheet(senderId, session, phone, text, lead.status);
+    } else {
+      scheduleStatusUnknownLead(senderId, session, phone, text);
     }
   }
 }
@@ -484,10 +564,7 @@ async function processMessage(senderId, message) {
   }
 
   // â”€â”€ Fetch user's first name (once) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  if (!session.firstName) {
-    const profile      = await getUserProfile(senderId);
-    session.firstName  = profile.first_name || null;
-  }
+  await ensureCustomerProfile(senderId, session);
 
   // â”€â”€ Update conversation history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   addToHistory(session, 'user', text);
@@ -532,13 +609,19 @@ async function processMessage(senderId, message) {
     if (o.name)   session.orderBuffer.name   = o.name;
     if (o.phone)  session.orderBuffer.phone  = o.phone;
     if (o.wilaya) session.orderBuffer.wilaya = o.wilaya;
+    if (o.address) session.orderBuffer.address = o.address;
     if (o.name)   rememberFact(session, 'order_name', o.name);
     if (o.phone)  rememberFact(session, 'order_phone', o.phone);
     if (o.wilaya) rememberFact(session, 'order_wilaya', o.wilaya);
+    if (o.address) rememberFact(session, 'order_address', o.address);
 
     const buf = session.orderBuffer;
+    if ((buf.name || buf.wilaya || buf.address) && Object.keys(session.pendingPhoneLeads || {}).length) {
+      await flushPendingPhoneLeads(senderId, session, text);
+    }
+
     if (buf.name && buf.phone && buf.wilaya) {
-      await logPhonesFromMessage(senderId, session, buf.phone);
+      await logPhonesFromMessage(senderId, session, buf.phone, { immediate: true, status: 'he wants to order' });
       // Complete order â€” notify admin
       await notifyAdminOrder(buf, senderId);
       session.orderBuffer = {}; // Reset
