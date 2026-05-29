@@ -33,7 +33,7 @@ function doPost(e) {
     if (existingRow) {
       const oldValues = sheet.getRange(existingRow, 1, 1, row.length).getValues()[0];
       const merged = row.map((value, index) => value || oldValues[index] || '');
-      merged[0] = body.created_at || new Date().toISOString();
+      merged[11] = body.created_at || new Date().toISOString();
       sheet.getRange(existingRow, 1, 1, merged.length).setValues([merged]);
       return json({ ok: true, action: 'updated', row: existingRow });
     }

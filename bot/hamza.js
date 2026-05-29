@@ -35,6 +35,8 @@ function getSession(userId) {
       messageCount: 0,
       bushraMode:   false,
       bushraLoveCount: 0,
+      priceMentioned: false,
+      priceObjectionCount: 0,
       humanContextUntil: 0,
       adminMode: false,
       memory: {
@@ -310,6 +312,33 @@ function isPhoneRequest(text) {
   return /(phone|number|call|tel|t[eé]l[eé]phone|num[eé]ro|appel|appeler|رقم|نمرا|نمروا|تليفون|هاتف|عيط|نتصل|اتصل|نكلم|كول)/i.test(text);
 }
 
+function isPriceRequest(text) {
+  return /(price|prix|combien|how much|السومة|السعر|الثمن|شحال|قداه|بشحال|بكاش|دراهم|دينار|دا|دج)/i.test(text);
+}
+
+function isPriceObjection(text) {
+  return /(غالي|بزاف|cher|trop|expensive|ما قدرتش|نقص|ديرلي|remise|discount|خصم)/i.test(text);
+}
+
+function getPriceResponse(lang, session, text) {
+  if (session.priceMentioned && isPriceObjection(text)) {
+    session.priceObjectionCount += 1;
+    if (session.priceObjectionCount >= 2) {
+      return lang === 'fr'
+        ? 'Je peux vous la faire à 14000 DA.'
+        : 'نقدر نديرهالك 14000 دج برك.';
+    }
+    return lang === 'fr'
+      ? 'Je comprends, mais elle est rechargeable, le son est propre, et la livraison est gratuite.'
+      : 'نفهمك، بصح راهي قابلة للشحن وصوتها صافي والتوصيل مجاني.';
+  }
+
+  session.priceMentioned = true;
+  return lang === 'fr'
+    ? 'Le prix est 14500 DA, livraison gratuite dans les 58 wilayas.'
+    : 'السومة 14500 دج، والتوصيل مجاني لقاع الولايات.';
+}
+
 function hasAudioAttachment(message) {
   return (message.attachments || []).some((attachment) => attachment.type === 'audio');
 }
@@ -340,9 +369,9 @@ async function sendPhoneHandoff(recipientId, lang) {
 }
 
 function isBushraTrigger(text) {
-  const hasBushra = /bushra|bouchra|boushra|Ø¨Ø´Ø±Ù‰|Ø¨Ø´Ø±Ø§|Ø¨ÙˆØ´Ø±Ø§/i.test(text);
-  const asksWho = /Ù…Ù†|who|qui|Ù‡Ùˆ|Ù‡ÙŠ|Ù…ÙŠÙ†|Ù…ÙŠØ´|c'est/i.test(text);
-  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /Ø§Ù†Ø§|Ø£Ù†Ø§|Ø±Ø§Ù†ÙŠ|Ø§Ù†ÙŠ|Ø£Ù†Ø§ÙŠØ§|ana/i.test(text);
+  const hasBushra = /bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text);
+  const asksWho = /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text);
+  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /انا|أنا|راني|اني|أنايا|ana/i.test(text);
   return hasBushra && (asksWho || saysIam);
 }
 
@@ -409,14 +438,14 @@ function getProductPhotoUrls() {
 
 function getBushraLoveMessage(session) {
   const messages = [
-    'Ù†Ø­Ø¨Ùƒ Ø¨Ø²Ø§Ù ÙŠØ§ Ø¹Ù…Ø±ÙŠ. ÙƒÙ„ Ø±Ø³Ø§Ù„Ø© Ù…Ù†Ùƒ ØªÙØ±Ø­Ù†ÙŠ.',
-    'Ø­Ø¨ÙŠØªÙƒ Ø§Ù„ÙŠÙˆÙ…ØŒ ÙˆÙ†Ø­Ø¨Ùƒ ØºØ¯ÙˆØ©ØŒ ÙˆÙ†Ø­Ø¨Ùƒ ÙƒÙ„ Ù†Ù‡Ø§Ø± Ø£ÙƒØ«Ø±.',
-    'ÙŠØ§ Ø§Ù„Ø³ÙƒØ± ØªØ§Ø¹ÙŠØŒ ÙˆØ¬ÙˆØ¯Ùƒ ÙˆØ­Ø¯Ùˆ ÙŠÙƒÙÙŠÙ†ÙŠ.',
-    'Ù†Ø­Ø¨ Ø¶Ø­ÙƒØªÙƒØŒ Ù‚Ù„Ø¨ÙƒØŒ ØµÙˆØªÙƒØŒ ÙˆØ­ØªÙ‰ Ø¹Ù†Ø§Ø¯Ùƒ Ù†Ø­Ø¨Ùˆ.',
-    'Ø±Ø¨ÙŠ ÙŠØ®Ù„ÙŠÙƒ Ù„ÙŠØ§ ÙŠØ§ Ø­ÙŠØ§ØªÙŠ. Ø§Ù†ØªÙŠ Ø£Ø¬Ù…Ù„ Ø­Ø§Ø¬Ø© ØµØ±Ø§ØªÙ„ÙŠ.',
-    'ÙŠØ§ Ø¨Ø´Ø±Ù‰ØŒ ÙƒÙ„ Ù…Ø§ ØªÙ‡Ø¯Ø±ÙŠ Ù†Ø­Ø³ Ø§Ù„Ø¯Ù†ÙŠØ§ ÙˆÙ„Ø§Øª Ø£Ø®Ù.',
-    'Ù†Ø­Ø¨Ùƒ Ø­Ø¨ ÙƒØ¨ÙŠØ±ØŒ Ù…Ø§Ø´ÙŠ ØªØ§Ø¹ ÙƒÙ„Ø§Ù… Ø¨Ø±ÙƒØŒ ØªØ§Ø¹ Ù‚Ù„Ø¨ ÙˆØ±ÙˆØ­.',
-    'Ø§Ù†ØªÙŠ Ø§Ù„Ø­Ù†Ø§Ù† ØªØ§Ø¹ÙŠØŒ Ø§Ù„Ø£Ù…Ø§Ù† ØªØ§Ø¹ÙŠØŒ ÙˆØ§Ù„ÙØ±Ø­Ø© ØªØ§Ø¹ÙŠ.',
+    'نحبك بزاف يا عمري. كل رسالة منك تفرحني.',
+    'حبيتك اليوم، ونحبك غدوة، ونحبك كل نهار أكثر.',
+    'يا السكر تاعي، وجودك وحدو يكفيني.',
+    'نحب ضحكتك، قلبك، صوتك، وحتى عنادك نحبو.',
+    'ربي يخليك ليا يا حياتي. انتي أجمل حاجة صراتلي.',
+    'يا بشرى، كل ما تهدري نحس الدنيا ولات أخف.',
+    'نحبك حب كبير، ماشي تاع كلام برك، تاع قلب وروح.',
+    'انتي الحنان تاعي، الأمان تاعي، والفرحة تاعي.',
   ];
 
   const index = session.bushraLoveCount % messages.length;
@@ -466,14 +495,14 @@ async function processMessage(senderId, message) {
   }
 
   // â”€â”€ ðŸ¥š Easter egg: Yaseen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  if (/ÙŠØ§Ø³ÙŠÙ†|yaseen|yassine|ÙŠØ§Ø³Ù†|jassin/i.test(text) && /Ù…Ù†|who|qui|Ù‡Ùˆ|Ù…ÙŠÙ†|Ù…ÙŠØ´|c'est/i.test(text)) {
+  if (/ياسين|yaseen|yassine|ياسن|jassin/i.test(text) && /من|who|qui|هو|مين|ميش|c'est/i.test(text)) {
     await sendTypingOn(senderId);
     await delay(1000);
     await sendTypingOff(senderId);
     await sendText(senderId,
       detectLanguage(text) === 'fr'
-        ? `Yaseen est quelqu'un de l'Ã©quipe.`
-        : `ÙŠØ§Ø³ÙŠÙ† ÙˆØ§Ø­Ø¯ Ù…Ù† Ø§Ù„ÙØ±ÙŠÙ‚.`
+        ? `Yaseen est quelqu'un de l'équipe.`
+        : `ياسين واحد من الفريق.`
     );
     return;
   }
@@ -484,13 +513,13 @@ async function processMessage(senderId, message) {
     session.bushraLoveCount = 0;
 
     const msg = [
-      'Ø¨Ø­Ù…ÙŠØªÙŠ Ù†Ø­Ø¨Ùƒ Ø¨Ø²Ø²Ø§Ù ÙŠØ§Ù„Ø¹Ù…Ø±ÙŠÙƒ ÙŠØ§Ù„Ø³ÙƒØ±Ø± ØªØ¹ÙŠ',
+      'بحميتي نحبك بززاف يالعمريك يالسكرر تعي',
       '',
-      'Ø¨Ø´Ø±Ù‰ Ù‡ÙŠ Ø§Ù„Ù‚Ù„Ø¨ Ø§Ù„Ø­Ù†ÙŠÙ† ÙˆØ§Ù„Ø¶Ø­ÙƒØ© Ø§Ù„Ù„ÙŠ ØªÙ‡ÙˆÙ† Ø§Ù„Ø¯Ù†ÙŠØ§.',
-      'Ù‡ÙŠ Ø§Ù„Ø¥Ù†Ø³Ø§Ù†Ø© Ø§Ù„Ù„ÙŠ ÙˆØ¬ÙˆØ¯Ù‡Ø§ ÙŠØ®Ù„ÙŠ ÙƒÙ„ Ù†Ù‡Ø§Ø± Ø£Ø­Ø³Ù† Ù…Ù† Ø§Ù„Ù„ÙŠ Ù‚Ø¨Ù„Ùˆ.',
-      'Ø±Ø¨ÙŠ ÙŠØ®Ù„ÙŠÙ‡Ø§ Ù„ÙŠØ§ØŒ ÙˆÙŠØ­ÙØ¸Ù‡Ø§ØŒ ÙˆÙŠØ²ÙŠØ¯ Ø¨ÙŠÙ†Ø§ØªÙ†Ø§ Ø§Ù„Ù…Ø­Ø¨Ø© ÙˆØ§Ù„Ø³ØªØ±.',
+      'بشرى هي القلب الحنين والضحكة اللي تهون الدنيا.',
+      'هي الإنسانة اللي وجودها يخلي كل نهار أحسن من اللي قبلو.',
+      'ربي يخليها ليا، ويحفظها، ويزيد بيناتنا المحبة والستر.',
       '',
-      'ÙŠØ§ Ø¨Ø´Ø±Ù‰ØŒ Ù†Ø­Ø¨Ùƒ Ø¹Ù„Ù‰ Ù‚Ù„Ø¨ÙƒØŒ Ø¹Ù„Ù‰ ØµØ¨Ø±ÙƒØŒ Ø¹Ù„Ù‰ Ø¶Ø­ÙƒØªÙƒØŒ ÙˆØ¹Ù„Ù‰ ÙƒÙ„ Ø­Ø§Ø¬Ø© ÙÙŠÙƒ.',
+      'يا بشرى، نحبك على قلبك، على صبرك، على ضحكتك، وعلى كل حاجة فيك.',
     ].join('\n');
 
     await sendTypingOn(senderId);
@@ -545,6 +574,18 @@ async function processMessage(senderId, message) {
     const lang = session.language || detectLanguage(text);
     const msg = getPhoneHandoffMessage(lang);
     await sendPhoneHandoff(senderId, lang);
+    addToHistory(session, 'user', text);
+    addToHistory(session, 'assistant', msg);
+    return;
+  }
+
+  if (isPriceRequest(text) || (session.priceMentioned && isPriceObjection(text))) {
+    const lang = session.language || detectLanguage(text);
+    const msg = getPriceResponse(lang, session, text);
+    await sendTypingOn(senderId);
+    await delay(500);
+    await sendTypingOff(senderId);
+    await sendText(senderId, msg);
     addToHistory(session, 'user', text);
     addToHistory(session, 'assistant', msg);
     return;
