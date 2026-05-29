@@ -2,14 +2,20 @@ const { sendText }        = require('./messenger');
 const knowledge            = require('./knowledge');
 
 const ADMIN_PSID = process.env.ADMIN_PSID;
+const ADMIN_ENABLED = process.env.ADMIN_ENABLED === '1';
 
 // ─── Check if sender is admin ──────────────────────────────────────────────────
 function isAdmin(senderId) {
-  return ADMIN_PSID && senderId === ADMIN_PSID;
+  return ADMIN_ENABLED && ADMIN_PSID && senderId === ADMIN_PSID;
 }
 
 // ─── Notify admin via Messenger ────────────────────────────────────────────────
 async function notifyAdmin(message) {
+  if (!ADMIN_ENABLED) {
+    console.log('[Admin notification skipped — admin disabled]');
+    return;
+  }
+
   if (!ADMIN_PSID) {
     console.log('[Admin notification skipped — ADMIN_PSID not set]');
     return;
