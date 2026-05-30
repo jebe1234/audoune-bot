@@ -225,21 +225,21 @@ app.get('/admin/backfill', async (req, res) => {
       }
 
       const messages = conversation.messages?.data || [];
-      const latestCustomerMessage = messages.find((msg) => String(msg.from?.id) !== pageId);
-      if (!latestCustomerMessage) {
+      const latestMessage = messages[0];
+      if (!latestMessage || String(latestMessage.from?.id) === pageId) {
         result.skipped += 1;
         continue;
       }
 
-      const messageTime = new Date(latestCustomerMessage.created_time || 0).getTime();
+      const messageTime = new Date(latestMessage.created_time || 0).getTime();
       if (!messageTime || messageTime < sinceMs) {
         result.skipped += 1;
         continue;
       }
 
-      const senderId = String(latestCustomerMessage.from.id);
-      const text = (latestCustomerMessage.message || '').trim();
-      const attachments = latestCustomerMessage.attachments?.data || [];
+      const senderId = String(latestMessage.from.id);
+      const text = (latestMessage.message || '').trim();
+      const attachments = latestMessage.attachments?.data || [];
       const hasAudio = attachments.some((attachment) =>
         /audio/i.test(`${attachment.mime_type || ''} ${attachment.name || ''} ${attachment.type || ''}`)
       );
