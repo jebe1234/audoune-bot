@@ -9,7 +9,57 @@ const messengerStatus = {
   lastSuccessAt: null,
   lastErrorAt: null,
   lastError: null,
+  usage: {},
 };
+
+function parseUsageHeader(value) {
+  if (!value) return null;
+  try {
+    return typeof value === 'string' ? JSON.parse(value) : value;
+  } catch {
+    return null;
+  }
+}
+
+function getHighestUsagePercent(usage = {}) {
+  const values = [];
+  for (const item of Object.values(usage)) {
+    if (item && typeof item === 'object') {
+      for (const key of ['call_count', 'call_volume', 'total_cputime', 'total_time']) {
+        const value = Number(item[key]);
+        if (Number.isFinite(value)) values.push(value);
+      }
+    }
+  }
+  return values.length ? Math.max(...values) : 0;
+}
+
+function captureMetaUsage(headers = {}) {
+  const usage = {
+    app: parseUsageHeader(headers['x-app-usage']),
+    page: parseUsageHeader(headers['x-page-usage']),
+    business: parseUsageHeader(headers['x-business-use-case-usage']),
+  };
+  Object.keys(usage).forEach((key) => {
+    if (!usage[key]) delete usage[key];
+  });
+  if (Object.keys(usage).length) {
+    messengerStatus.usage = usage;
+    messengerStatus.highestUsagePercent = getHighestUsagePercent(usage);
+  }
+  return usage;
+}
+
+async function maybeBackoffForMetaUsage() {
+  const highest = messengerStatus.highestUsagePercent || 0;
+  if (highest >= 95) {
+    console.warn(`Meta usage is very high (${highest}%). Backing off for 5 minutes.`);
+    await delay(5 * 60 * 1000);
+  } else if (highest >= 85) {
+    console.warn(`Meta usage is high (${highest}%). Backing off for 60 seconds.`);
+    await delay(60 * 1000);
+  }
+}
 
 // ─── Core Send API call ────────────────────────────────────────────────────────
 async function callSendAPI(body, options = {}) {
@@ -20,6 +70,7 @@ async function enqueueSend(task) {
   const run = sendQueue
     .catch(() => {})
     .then(async () => {
+      await maybeBackoffForMetaUsage();
       const result = await task();
       if (SEND_INTERVAL_MS) await delay(SEND_INTERVAL_MS);
       return result;
@@ -37,6 +88,7 @@ async function callSendAPINow(body, options = {}) {
         params: { access_token: process.env.PAGE_ACCESS_TOKEN },
         timeout: 15000,
       });
+      captureMetaUsage(response.headers);
       messengerStatus.ok = true;
       messengerStatus.lastSuccessAt = new Date().toISOString();
       messengerStatus.lastError = null;
@@ -186,4 +238,5 @@ module.exports = {
   sendQuickReplies,
   getUserProfile,
   getMessengerStatus,
+  captureMetaUsage,
 };

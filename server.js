@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { handleMessage, handlePostback, handleEchoMessage } = require('./bot/hamza');
-const { getMessengerStatus } = require('./bot/messenger');
+const { getMessengerStatus, captureMetaUsage } = require('./bot/messenger');
 
 const app = express();
 app.use(express.json());
@@ -168,7 +168,7 @@ app.get('/diag', async (req, res) => {
   // Quick Facebook token test without messaging a customer.
   try {
     const axios = require('axios');
-    await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
+    const response = await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
       params: {
         access_token: process.env.PAGE_ACCESS_TOKEN,
         limit: 1,
@@ -176,6 +176,7 @@ app.get('/diag', async (req, res) => {
       },
       timeout: 15000,
     });
+    captureMetaUsage(response.headers);
     status.FACEBOOK_TOKEN = 'PASS ✅';
   } catch(e) {
     status.FACEBOOK_TOKEN = 'FAIL ❌ ' + (e.response?.data?.error?.message || e.message).substring(0, 80);
@@ -231,6 +232,7 @@ app.get('/admin/backfill', async (req, res) => {
         fields: 'id,updated_time,unread_count,participants,messages.limit(10){id,message,from,created_time,attachments}',
       },
     });
+    captureMetaUsage(conversations.headers);
 
     for (const conversation of conversations.data.data || []) {
       result.checked += 1;
