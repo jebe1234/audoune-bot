@@ -202,12 +202,18 @@ app.get('/admin/backfill', async (req, res) => {
     errors: [],
   };
 
-  try {
-    const me = await axios.get('https://graph.facebook.com/v19.0/me', {
-      params: { access_token: process.env.PAGE_ACCESS_TOKEN },
-    });
-    const pageId = String(me.data.id);
+  const isPageSender = (message) => {
+    const senderName = String(message?.from?.name || '').trim().toLowerCase();
+    const pageNames = [
+      process.env.PAGE_NAME,
+      process.env.BUSINESS_NAME,
+      'Audoune',
+    ].filter(Boolean).map((name) => String(name).trim().toLowerCase());
 
+    return pageNames.some((name) => senderName === name || senderName.includes(name));
+  };
+
+  try {
     const conversations = await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
       params: {
         access_token: process.env.PAGE_ACCESS_TOKEN,
@@ -226,7 +232,7 @@ app.get('/admin/backfill', async (req, res) => {
 
       const messages = conversation.messages?.data || [];
       const latestMessage = messages[0];
-      if (!latestMessage || String(latestMessage.from?.id) === pageId) {
+      if (!latestMessage || isPageSender(latestMessage)) {
         result.skipped += 1;
         continue;
       }
