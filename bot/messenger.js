@@ -2,6 +2,8 @@ const axios = require('axios');
 
 const GRAPH_API = 'https://graph.facebook.com/v19.0/me/messages';
 const SEND_RETRIES = 2;
+const SEND_INTERVAL_MS = Math.max(parseInt(process.env.MESSENGER_SEND_INTERVAL_MS || '1200', 10), 0);
+let sendQueue = Promise.resolve();
 const messengerStatus = {
   ok: null,
   lastSuccessAt: null,
@@ -11,6 +13,22 @@ const messengerStatus = {
 
 // ─── Core Send API call ────────────────────────────────────────────────────────
 async function callSendAPI(body, options = {}) {
+  return enqueueSend(() => callSendAPINow(body, options));
+}
+
+async function enqueueSend(task) {
+  const run = sendQueue
+    .catch(() => {})
+    .then(async () => {
+      const result = await task();
+      if (SEND_INTERVAL_MS) await delay(SEND_INTERVAL_MS);
+      return result;
+    });
+  sendQueue = run.catch(() => {});
+  return run;
+}
+
+async function callSendAPINow(body, options = {}) {
   let lastError;
 
   for (let attempt = 0; attempt <= SEND_RETRIES; attempt++) {

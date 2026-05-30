@@ -185,7 +185,7 @@ app.get('/diag', async (req, res) => {
 });
 
 // One-time helper: reply to recent conversations that arrived while Send API was broken.
-// Call: /admin/backfill?token=VERIFY_TOKEN&hours=24&limit=25
+// Call: /admin/backfill?token=VERIFY_TOKEN&hours=24&limit=10&dryRun=1
 app.get('/admin/backfill', async (req, res) => {
   const token = req.query.token;
   const allowedToken = process.env.BACKFILL_TOKEN || process.env.VERIFY_TOKEN;
@@ -193,12 +193,22 @@ app.get('/admin/backfill', async (req, res) => {
 
   const axios = require('axios');
   const hours = Math.min(Math.max(parseInt(req.query.hours || '24', 10), 1), 24);
-  const limit = Math.min(Math.max(parseInt(req.query.limit || '25', 10), 1), 50);
+  const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 25);
+  const maxReplies = Math.min(Math.max(parseInt(req.query.maxReplies || '5', 10), 0), 10);
+  const replyDelayMs = Math.min(
+    Math.max(parseInt(req.query.delayMs || process.env.BACKFILL_REPLY_DELAY_MS || '20000', 10), 5000),
+    120000
+  );
+  const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
   const sinceMs = Date.now() - hours * 60 * 60 * 1000;
   const result = {
     checked: 0,
     replied: 0,
+    wouldReply: 0,
     skipped: 0,
+    dryRun,
+    maxReplies,
+    replyDelayMs,
     errors: [],
   };
 
@@ -250,12 +260,23 @@ app.get('/admin/backfill', async (req, res) => {
         /audio/i.test(`${attachment.mime_type || ''} ${attachment.name || ''} ${attachment.type || ''}`)
       );
 
+      if (dryRun) {
+        result.wouldReply += 1;
+        continue;
+      }
+
+      if (result.replied >= maxReplies) {
+        result.skipped += 1;
+        continue;
+      }
+
       try {
         await handleMessage(senderId, {
           text,
           attachments: !text && hasAudio ? [{ type: 'audio' }] : [],
         });
         result.replied += 1;
+        await new Promise((resolve) => setTimeout(resolve, replyDelayMs));
       } catch (err) {
         result.errors.push({
           conversationId: conversation.id,
