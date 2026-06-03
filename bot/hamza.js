@@ -11,6 +11,7 @@ const path                                    = require('path');
 const { generateResponse }                    = require('./ai');
 const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
+const { extractPhoneNumbers, inferLeadStatus, hasLeadDetails, appendLeadToSheet } = require('./sheets');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
 
 // â”€â”€â”€ In-memory user sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -18,6 +19,7 @@ const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('
 const sessions = new Map();
 const pendingMessages = new Map();
 const MESSAGE_BATCH_DELAY_MS = parseInt(process.env.MESSAGE_BATCH_DELAY_MS || '5000', 10);
+const PHONE_ONLY_LEAD_DELAY_MS = parseInt(process.env.PHONE_ONLY_LEAD_DELAY_MS || '240000', 10);
 const HUMAN_CONTEXT_PAUSE_MS = 2 * 60 * 1000;
 
 function getSession(userId) {
@@ -26,11 +28,15 @@ function getSession(userId) {
       language:     null,
       history:      [],
       firstName:    null,
+      profileName:  null,
       isNew:        true,
       orderBuffer:  {},     // Accumulates order details as customer provides them
+      pendingPhoneLeads: {},
       messageCount: 0,
       bushraMode:   false,
       bushraLoveCount: 0,
+      priceMentioned: false,
+      priceObjectionCount: 0,
       humanContextUntil: 0,
       adminMode: false,
       memory: {
@@ -75,6 +81,32 @@ function updateMemoryFromUser(session, content) {
   if (!session.memory) session.memory = { facts: {}, asked: {}, lastQuestion: null };
   const text = normalizeMemoryText(content);
   if (!text) return;
+  const lastQuestion = session.memory.lastQuestion;
+
+  if (/^\s*\d{1,3}\s*(?:عام|سنة|ans|years?)?\s*$/i.test(text) && lastQuestion === 'age') {
+    const ageOnly = text.match(/\d{1,3}/)?.[0];
+    if (ageOnly) rememberFact(session, 'age', ageOnly);
+    session.memory.lastQuestion = null;
+    return;
+  }
+
+  if (lastQuestion === 'ears' && /(لزوج|زوج|زوز|both|deux)/i.test(text)) {
+    rememberFact(session, 'ears', 'both ears');
+    session.memory.lastQuestion = null;
+    return;
+  }
+
+  if (lastQuestion === 'ears' && /(وحدة|واحدة|one|une)/i.test(text)) {
+    rememberFact(session, 'ears', 'one ear');
+    session.memory.lastQuestion = null;
+    return;
+  }
+
+  if (lastQuestion === 'hearing_level' && /(بزاف|ناقص|ضعيف|faible|weak)/i.test(text)) {
+    rememberFact(session, 'hearing_level', 'very weak');
+    session.memory.lastQuestion = null;
+    return;
+  }
 
   const percent = text.match(/\b(10|20|30|40|50|60|70|80|90|100)\s*%/);
   if (percent) rememberFact(session, 'hearing_level', `${percent[1]}%`);
@@ -84,11 +116,16 @@ function updateMemoryFromUser(session, content) {
 
   const age =
     text.match(/(?:age|old|ans|عمر|عمرو|سن)[^\d]{0,12}(\d{1,3})/i) ||
-    text.match(/\b(\d{1,3})\s*(?:ans|years?|سنة|عام)\b/i);
+    text.match(/\b(\d{1,3})\s*(?:ans|years?|سنة|عام)\b/i) ||
+    text.match(/(\d{1,3})\s*(?:عام|سنة)/i);
   if (age) rememberFact(session, 'age', age[1]);
 
-  if (/(both|two ears|les deux|deux oreilles|زوج|زوز)/i.test(text)) rememberFact(session, 'ears', 'both ears');
+  if (/(both|two ears|les deux|deux oreilles|لزوج|زوج|زوز)/i.test(text)) rememberFact(session, 'ears', 'both ears');
   else if (/(one ear|une oreille|ودن وحدة|وذن وحدة|واحدة)/i.test(text)) rememberFact(session, 'ears', 'one ear');
+
+  if (/(لهدرة|الهدرة|الكلام|منفرزش|ما نفرزش|speech|paroles)/i.test(text)) {
+    rememberFact(session, 'speech_clarity', 'hears sound but speech is not clear');
+  }
 
   if (/(tv|télé|tele|volume|تلفزيون|تيليفزيون)/i.test(text)) {
     if (/(yes|oui|ايه|نعم|بزاف|يرفع|يعلي)/i.test(text)) rememberFact(session, 'tv_volume', 'raises TV volume');
@@ -166,11 +203,140 @@ function enqueueCustomerMessage(senderId, message) {
 }
 
 function isPhotoRequest(text) {
-  return /(photo|image|picture|pic|ØµÙˆØ±|ØµÙˆØ±Ø©|ØªØµÙˆÙŠØ±Ø©|ÙÙˆØ·Ùˆ|ÙÙˆØªÙˆ|ÙˆØ±ÙŠÙ†ÙŠ|Ù†Ø´ÙˆÙÙ‡Ø§|Ø´ÙˆÙÙ†ÙŠ|Ø´ÙƒÙ„Ù‡Ø§)/i.test(text);
+  return /(photo|image|picture|pic|صور|صورة|تصويرة|فوطو|فوتو|وريني|نشوفها|شوفني|شكلها|نشوفو|ابعثلي|ابعتلي)/i.test(text);
+}
+
+async function ensureCustomerProfile(senderId, session) {
+  if (session.profileName) return;
+  const profile = await getUserProfile(senderId);
+  const first = profile.first_name || '';
+  const last = profile.last_name || '';
+  session.firstName = first || null;
+  session.profileName = `${first} ${last}`.trim();
+}
+
+function buildLead(senderId, session, phone, text, status = null) {
+  const lead = {
+    profile_name: session.profileName || '',
+    client_name: session.orderBuffer.name || session.memory?.facts?.order_name || '',
+    wilaya: session.orderBuffer.wilaya || session.memory?.facts?.order_wilaya || '',
+    address: session.orderBuffer.address || session.memory?.facts?.order_address || '',
+  };
+
+  return {
+    ...lead,
+    phone,
+    status: status || inferLeadStatus(text, lead),
+    messenger_id: senderId,
+    product: 'Great-Ears G19S',
+    summary: buildLeadSummary(session, text),
+    language: session.language || '',
+    last_message: text,
+    created_at: new Date().toISOString(),
+  };
+}
+
+function buildLeadSummary(session, text) {
+  const facts = session.memory?.facts || {};
+  const parts = [];
+  if (facts.hearing_level) parts.push(`hearing: ${facts.hearing_level}`);
+  if (facts.ears) parts.push(`ears: ${facts.ears}`);
+  if (facts.speech_clarity) parts.push('speech unclear');
+  if (facts.tv_volume) parts.push(`tv: ${facts.tv_volume}`);
+  if (facts.duration) parts.push(`duration: ${facts.duration}`);
+  if (facts.symptoms) parts.push(`symptoms: ${facts.symptoms}`);
+
+  const cleanMessage = String(text || '').replace(/\s+/g, ' ').trim();
+  if (cleanMessage) parts.push(`last: ${cleanMessage.slice(0, 120)}`);
+  return parts.join(' | ');
+}
+
+async function sendLeadToSheet(senderId, session, phone, text, status = null) {
+  try {
+    await ensureCustomerProfile(senderId, session);
+    await appendLeadToSheet(buildLead(senderId, session, phone, text, status));
+    console.log(`Lead phone sent to Google Sheet for ${senderId}: ${phone}`);
+  } catch (err) {
+    console.error('Google Sheet lead append failed:', err.response?.data || err.message);
+  }
+}
+
+function clearPendingPhoneLead(session, phone) {
+  const pending = session.pendingPhoneLeads?.[phone];
+  if (pending?.timer) clearTimeout(pending.timer);
+  if (session.pendingPhoneLeads) delete session.pendingPhoneLeads[phone];
+}
+
+function scheduleStatusUnknownLead(senderId, session, phone, text) {
+  clearPendingPhoneLead(session, phone);
+  session.pendingPhoneLeads[phone] = {
+    text,
+    timer: setTimeout(async () => {
+      const pending = session.pendingPhoneLeads?.[phone];
+      if (!pending) return;
+      delete session.pendingPhoneLeads[phone];
+      await sendLeadToSheet(senderId, session, phone, pending.text, 'status unknown');
+    }, PHONE_ONLY_LEAD_DELAY_MS),
+  };
+}
+
+async function flushPendingPhoneLeads(senderId, session, text) {
+  const phones = Object.keys(session.pendingPhoneLeads || {});
+  for (const phone of phones) {
+    clearPendingPhoneLead(session, phone);
+    await sendLeadToSheet(senderId, session, phone, text, 'he wants to order');
+  }
+}
+
+async function logPhonesFromMessage(senderId, session, text, options = {}) {
+  const phones = extractPhoneNumbers(text);
+  if (!phones.length) return;
+
+  await ensureCustomerProfile(senderId, session);
+
+  for (const phone of phones) {
+    rememberFact(session, 'order_phone', phone);
+    session.orderBuffer.phone = phone;
+
+    const lead = buildLead(senderId, session, phone, text, options.status);
+    if (options.immediate || hasLeadDetails(text, lead)) {
+      clearPendingPhoneLead(session, phone);
+      await sendLeadToSheet(senderId, session, phone, text, lead.status);
+    } else {
+      scheduleStatusUnknownLead(senderId, session, phone, text);
+    }
+  }
 }
 
 function isPhoneRequest(text) {
-  return /(phone|number|call|tel|t[eÃ©]l[eÃ©]phone|num[eÃ©]ro|appel|appeler|Ø±Ù‚Ù…|Ù†Ù…Ø±[Ø§Ùˆ]?|ØªÙ„ÙŠÙÙˆÙ†|Ù‡Ø§ØªÙ|Ø¹ÙŠØ·|Ù†ØªØµÙ„|Ø§ØªØµÙ„|Ù†ÙƒÙ„Ù…|ÙƒÙˆÙ„)/i.test(text);
+  return /(phone|number|call|tel|t[eé]l[eé]phone|num[eé]ro|appel|appeler|رقم|نمرا|نمروا|تليفون|هاتف|عيط|نتصل|اتصل|نكلم|كول)/i.test(text);
+}
+
+function isPriceRequest(text) {
+  return /(price|prix|combien|how much|السومة|السعر|الثمن|شحال|قداه|بشحال|بكاش|دراهم|دينار|دا|دج)/i.test(text);
+}
+
+function isPriceObjection(text) {
+  return /(غالي|بزاف|cher|trop|expensive|ما قدرتش|نقص|ديرلي|remise|discount|خصم)/i.test(text);
+}
+
+function getPriceResponse(lang, session, text) {
+  if (session.priceMentioned && isPriceObjection(text)) {
+    session.priceObjectionCount += 1;
+    if (session.priceObjectionCount >= 2) {
+      return lang === 'fr'
+        ? 'Je peux vous la faire à 14000 DA.'
+        : 'نقدر نديرهالك 14000 دج برك.';
+    }
+    return lang === 'fr'
+      ? 'Je comprends, mais elle est rechargeable, le son est propre, et la livraison est gratuite.'
+      : 'نفهمك، بصح راهي قابلة للشحن وصوتها صافي والتوصيل مجاني.';
+  }
+
+  session.priceMentioned = true;
+  return lang === 'fr'
+    ? 'Le prix est 14500 DA, livraison gratuite dans les 58 wilayas.'
+    : 'السومة 14500 دج، والتوصيل مجاني لقاع الولايات.';
 }
 
 function hasAudioAttachment(message) {
@@ -179,33 +345,33 @@ function hasAudioAttachment(message) {
 
 function getPhoneHandoffMessage(lang) {
   return lang === 'fr'
-    ? 'Vous pouvez mâ€™appeler ici: +213563746369'
-    : 'ØªÙ‚Ø¯Ø± ØªØ¹ÙŠØ·Ù„ÙŠ Ù‡Ù†Ø§: +213563746369';
+    ? "Vous pouvez m'appeler ici: +213563746369"
+    : 'تقدر تعيطلي هنا: +213563746369';
 }
 
 function getClarifyMessage(lang, isAudio = false) {
   if (lang === 'fr') {
     return isAudio
-      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou Ã©crivez-moi juste votre question."
+      ? "Je n'ai pas bien compris le vocal. Renvoyez-le un peu plus clairement, ou écrivez-moi juste votre question."
       : "Je n'ai pas bien compris. Vous pouvez me le dire autrement?";
   }
 
   return isAudio
-    ? 'Ù…Ø§ ÙÙ‡Ù…ØªØ´ Ø§Ù„ØµÙˆØª Ù…Ù„ÙŠØ­. Ø¹Ø§ÙˆØ¯ Ø§Ø¨Ø¹Ø«Ù‡ ÙˆØ§Ø¶Ø­ Ø´ÙˆÙŠØ©ØŒ ÙˆÙ„Ø§ Ø§ÙƒØªØ¨Ù„ÙŠ Ø§Ù„Ø³Ø¤Ø§Ù„ Ø¨Ø±Ùƒ.'
-    : 'Ù…Ø§ ÙÙ‡Ù…ØªØ´ Ù…Ù„ÙŠØ­. ØªÙ‚Ø¯Ø± ØªØ¹Ø§ÙˆØ¯Ù‡Ø§ Ø¨Ø·Ø±ÙŠÙ‚Ø© Ø£Ø®Ø±Ù‰ØŸ';
+    ? 'ما فهمتش الصوت مليح. عاود ابعثه واضح شوية، ولا اكتبلي السؤال برك.'
+    : 'ما فهمتش مليح. تقدر تعاودها بطريقة أخرى؟';
 }
 
 async function sendPhoneHandoff(recipientId, lang) {
   const phone = '+213563746369';
   const text = getPhoneHandoffMessage(lang);
-  const title = lang === 'fr' ? 'Appeler' : 'Ø§ØªØµÙ„ Ø§Ù„Ø¢Ù†';
+  const title = lang === 'fr' ? 'Appeler' : 'اتصل الآن';
   await sendCallButton(recipientId, text, phone, title);
 }
 
 function isBushraTrigger(text) {
-  const hasBushra = /bushra|bouchra|boushra|Ø¨Ø´Ø±Ù‰|Ø¨Ø´Ø±Ø§|Ø¨ÙˆØ´Ø±Ø§/i.test(text);
-  const asksWho = /Ù…Ù†|who|qui|Ù‡Ùˆ|Ù‡ÙŠ|Ù…ÙŠÙ†|Ù…ÙŠØ´|c'est/i.test(text);
-  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /Ø§Ù†Ø§|Ø£Ù†Ø§|Ø±Ø§Ù†ÙŠ|Ø§Ù†ÙŠ|Ø£Ù†Ø§ÙŠØ§|ana/i.test(text);
+  const hasBushra = /bushra|bouchra|boushra|بشرى|بشرا|بوشرا/i.test(text);
+  const asksWho = /من|who|qui|هو|هي|مين|ميش|c'est/i.test(text);
+  const saysIam = /\b(i am|i'm|im|me|moi)\b/i.test(text) || /انا|أنا|راني|اني|أنايا|ana/i.test(text);
   return hasBushra && (asksWho || saysIam);
 }
 
@@ -272,14 +438,14 @@ function getProductPhotoUrls() {
 
 function getBushraLoveMessage(session) {
   const messages = [
-    'Ù†Ø­Ø¨Ùƒ Ø¨Ø²Ø§Ù ÙŠØ§ Ø¹Ù…Ø±ÙŠ. ÙƒÙ„ Ø±Ø³Ø§Ù„Ø© Ù…Ù†Ùƒ ØªÙØ±Ø­Ù†ÙŠ.',
-    'Ø­Ø¨ÙŠØªÙƒ Ø§Ù„ÙŠÙˆÙ…ØŒ ÙˆÙ†Ø­Ø¨Ùƒ ØºØ¯ÙˆØ©ØŒ ÙˆÙ†Ø­Ø¨Ùƒ ÙƒÙ„ Ù†Ù‡Ø§Ø± Ø£ÙƒØ«Ø±.',
-    'ÙŠØ§ Ø§Ù„Ø³ÙƒØ± ØªØ§Ø¹ÙŠØŒ ÙˆØ¬ÙˆØ¯Ùƒ ÙˆØ­Ø¯Ùˆ ÙŠÙƒÙÙŠÙ†ÙŠ.',
-    'Ù†Ø­Ø¨ Ø¶Ø­ÙƒØªÙƒØŒ Ù‚Ù„Ø¨ÙƒØŒ ØµÙˆØªÙƒØŒ ÙˆØ­ØªÙ‰ Ø¹Ù†Ø§Ø¯Ùƒ Ù†Ø­Ø¨Ùˆ.',
-    'Ø±Ø¨ÙŠ ÙŠØ®Ù„ÙŠÙƒ Ù„ÙŠØ§ ÙŠØ§ Ø­ÙŠØ§ØªÙŠ. Ø§Ù†ØªÙŠ Ø£Ø¬Ù…Ù„ Ø­Ø§Ø¬Ø© ØµØ±Ø§ØªÙ„ÙŠ.',
-    'ÙŠØ§ Ø¨Ø´Ø±Ù‰ØŒ ÙƒÙ„ Ù…Ø§ ØªÙ‡Ø¯Ø±ÙŠ Ù†Ø­Ø³ Ø§Ù„Ø¯Ù†ÙŠØ§ ÙˆÙ„Ø§Øª Ø£Ø®Ù.',
-    'Ù†Ø­Ø¨Ùƒ Ø­Ø¨ ÙƒØ¨ÙŠØ±ØŒ Ù…Ø§Ø´ÙŠ ØªØ§Ø¹ ÙƒÙ„Ø§Ù… Ø¨Ø±ÙƒØŒ ØªØ§Ø¹ Ù‚Ù„Ø¨ ÙˆØ±ÙˆØ­.',
-    'Ø§Ù†ØªÙŠ Ø§Ù„Ø­Ù†Ø§Ù† ØªØ§Ø¹ÙŠØŒ Ø§Ù„Ø£Ù…Ø§Ù† ØªØ§Ø¹ÙŠØŒ ÙˆØ§Ù„ÙØ±Ø­Ø© ØªØ§Ø¹ÙŠ.',
+    'نحبك بزاف يا عمري. كل رسالة منك تفرحني.',
+    'حبيتك اليوم، ونحبك غدوة، ونحبك كل نهار أكثر.',
+    'يا السكر تاعي، وجودك وحدو يكفيني.',
+    'نحب ضحكتك، قلبك، صوتك، وحتى عنادك نحبو.',
+    'ربي يخليك ليا يا حياتي. انتي أجمل حاجة صراتلي.',
+    'يا بشرى، كل ما تهدري نحس الدنيا ولات أخف.',
+    'نحبك حب كبير، ماشي تاع كلام برك، تاع قلب وروح.',
+    'انتي الحنان تاعي، الأمان تاعي، والفرحة تاعي.',
   ];
 
   const index = session.bushraLoveCount % messages.length;
@@ -316,6 +482,8 @@ async function processMessage(senderId, message) {
 
   if (!text) return;
 
+  await logPhonesFromMessage(senderId, session, text);
+
   // â”€â”€ Admin command handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isAdmin(senderId) && text.startsWith('!')) {
     await handleAdminCommand(senderId, text);
@@ -327,14 +495,14 @@ async function processMessage(senderId, message) {
   }
 
   // â”€â”€ ðŸ¥š Easter egg: Yaseen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  if (/ÙŠØ§Ø³ÙŠÙ†|yaseen|yassine|ÙŠØ§Ø³Ù†|jassin/i.test(text) && /Ù…Ù†|who|qui|Ù‡Ùˆ|Ù…ÙŠÙ†|Ù…ÙŠØ´|c'est/i.test(text)) {
+  if (/ياسين|yaseen|yassine|ياسن|jassin/i.test(text) && /من|who|qui|هو|مين|ميش|c'est/i.test(text)) {
     await sendTypingOn(senderId);
     await delay(1000);
     await sendTypingOff(senderId);
     await sendText(senderId,
       detectLanguage(text) === 'fr'
-        ? `Yaseen est quelqu'un de l'Ã©quipe.`
-        : `ÙŠØ§Ø³ÙŠÙ† ÙˆØ§Ø­Ø¯ Ù…Ù† Ø§Ù„ÙØ±ÙŠÙ‚.`
+        ? `Yaseen est quelqu'un de l'équipe.`
+        : `ياسين واحد من الفريق.`
     );
     return;
   }
@@ -345,13 +513,13 @@ async function processMessage(senderId, message) {
     session.bushraLoveCount = 0;
 
     const msg = [
-      'Ø¨Ø­Ù…ÙŠØªÙŠ Ù†Ø­Ø¨Ùƒ Ø¨Ø²Ø²Ø§Ù ÙŠØ§Ù„Ø¹Ù…Ø±ÙŠÙƒ ÙŠØ§Ù„Ø³ÙƒØ±Ø± ØªØ¹ÙŠ',
+      'بحميتي نحبك بززاف يالعمريك يالسكرر تعي',
       '',
-      'Ø¨Ø´Ø±Ù‰ Ù‡ÙŠ Ø§Ù„Ù‚Ù„Ø¨ Ø§Ù„Ø­Ù†ÙŠÙ† ÙˆØ§Ù„Ø¶Ø­ÙƒØ© Ø§Ù„Ù„ÙŠ ØªÙ‡ÙˆÙ† Ø§Ù„Ø¯Ù†ÙŠØ§.',
-      'Ù‡ÙŠ Ø§Ù„Ø¥Ù†Ø³Ø§Ù†Ø© Ø§Ù„Ù„ÙŠ ÙˆØ¬ÙˆØ¯Ù‡Ø§ ÙŠØ®Ù„ÙŠ ÙƒÙ„ Ù†Ù‡Ø§Ø± Ø£Ø­Ø³Ù† Ù…Ù† Ø§Ù„Ù„ÙŠ Ù‚Ø¨Ù„Ùˆ.',
-      'Ø±Ø¨ÙŠ ÙŠØ®Ù„ÙŠÙ‡Ø§ Ù„ÙŠØ§ØŒ ÙˆÙŠØ­ÙØ¸Ù‡Ø§ØŒ ÙˆÙŠØ²ÙŠØ¯ Ø¨ÙŠÙ†Ø§ØªÙ†Ø§ Ø§Ù„Ù…Ø­Ø¨Ø© ÙˆØ§Ù„Ø³ØªØ±.',
+      'بشرى هي القلب الحنين والضحكة اللي تهون الدنيا.',
+      'هي الإنسانة اللي وجودها يخلي كل نهار أحسن من اللي قبلو.',
+      'ربي يخليها ليا، ويحفظها، ويزيد بيناتنا المحبة والستر.',
       '',
-      'ÙŠØ§ Ø¨Ø´Ø±Ù‰ØŒ Ù†Ø­Ø¨Ùƒ Ø¹Ù„Ù‰ Ù‚Ù„Ø¨ÙƒØŒ Ø¹Ù„Ù‰ ØµØ¨Ø±ÙƒØŒ Ø¹Ù„Ù‰ Ø¶Ø­ÙƒØªÙƒØŒ ÙˆØ¹Ù„Ù‰ ÙƒÙ„ Ø­Ø§Ø¬Ø© ÙÙŠÙƒ.',
+      'يا بشرى، نحبك على قلبك، على صبرك، على ضحكتك، وعلى كل حاجة فيك.',
     ].join('\n');
 
     await sendTypingOn(senderId);
@@ -389,13 +557,13 @@ async function processMessage(senderId, message) {
       }
       const msg = lang === 'fr'
         ? 'Voici les photos du produit.'
-        : 'Ù‡Ø°Ùˆ ØµÙˆØ± Ø§Ù„Ù…Ù†ØªØ¬.';
+        : 'هذو صور المنتج.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     } else {
       const msg = lang === 'fr'
-        ? "La photo n'est pas encore configurÃ©e. Je peux quand mÃªme vous donner les dÃ©tails du produit."
-        : "Ø§Ù„ØµÙˆØ±Ø© Ù…Ø§ Ø±Ø§Ù‡ÙŠØ´ Ù…Ø¨Ø±Ù…Ø¬Ø© Ø¯Ø±ÙˆÙƒ. Ù†Ù‚Ø¯Ø± Ù†Ø¹Ø·ÙŠÙƒ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ù…Ù†ØªØ¬.";
+        ? "La photo n'est pas encore configurée. Je peux quand même vous donner les détails du produit."
+        : 'الصورة ما راهيش مبرمجة دروك. نقدر نعطيك تفاصيل المنتج.';
       await sendText(senderId, msg);
       addToHistory(session, 'assistant', msg);
     }
@@ -406,6 +574,18 @@ async function processMessage(senderId, message) {
     const lang = session.language || detectLanguage(text);
     const msg = getPhoneHandoffMessage(lang);
     await sendPhoneHandoff(senderId, lang);
+    addToHistory(session, 'user', text);
+    addToHistory(session, 'assistant', msg);
+    return;
+  }
+
+  if (isPriceRequest(text) || (session.priceMentioned && isPriceObjection(text))) {
+    const lang = session.language || detectLanguage(text);
+    const msg = getPriceResponse(lang, session, text);
+    await sendTypingOn(senderId);
+    await delay(500);
+    await sendTypingOff(senderId);
+    await sendText(senderId, msg);
     addToHistory(session, 'user', text);
     addToHistory(session, 'assistant', msg);
     return;
@@ -425,10 +605,7 @@ async function processMessage(senderId, message) {
   }
 
   // â”€â”€ Fetch user's first name (once) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  if (!session.firstName) {
-    const profile      = await getUserProfile(senderId);
-    session.firstName  = profile.first_name || null;
-  }
+  await ensureCustomerProfile(senderId, session);
 
   // â”€â”€ Update conversation history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   addToHistory(session, 'user', text);
@@ -473,12 +650,19 @@ async function processMessage(senderId, message) {
     if (o.name)   session.orderBuffer.name   = o.name;
     if (o.phone)  session.orderBuffer.phone  = o.phone;
     if (o.wilaya) session.orderBuffer.wilaya = o.wilaya;
+    if (o.address) session.orderBuffer.address = o.address;
     if (o.name)   rememberFact(session, 'order_name', o.name);
     if (o.phone)  rememberFact(session, 'order_phone', o.phone);
     if (o.wilaya) rememberFact(session, 'order_wilaya', o.wilaya);
+    if (o.address) rememberFact(session, 'order_address', o.address);
 
     const buf = session.orderBuffer;
+    if ((buf.name || buf.wilaya || buf.address) && Object.keys(session.pendingPhoneLeads || {}).length) {
+      await flushPendingPhoneLeads(senderId, session, text);
+    }
+
     if (buf.name && buf.phone && buf.wilaya) {
+      await logPhonesFromMessage(senderId, session, buf.phone, { immediate: true, status: 'he wants to order' });
       // Complete order â€” notify admin
       await notifyAdminOrder(buf, senderId);
       session.orderBuffer = {}; // Reset
@@ -530,20 +714,20 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est Ã  14500 DA, livraison gratuite dans les 58 wilayas.\n\nPour commander, envoyez votre nom, numÃ©ro de tÃ©lÃ©phone et wilaya. Paiement Ã  la livraison, dÃ©lai 24-48h.`,
-      dz: `Ø§Ù„Ø³Ù…Ø§Ø¹Ø© Ø¬Ø±ÙŠØª Ø¥ÙŠØ±Ø² Ø¬ÙŠ 19 Ø¥Ø³ Ø¨Ø³ÙˆÙ…Ø© 14500 Ø¯Ø¬. Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…Ø¬Ø§Ù†ÙŠ Ù„ÙƒÙ„ 58 ÙˆÙ„Ø§ÙŠØ©.\n\nØ¨Ø§Ø´ ØªØ·Ù„Ø¨ØŒ Ø§Ø¨Ø¹Ø« Ø§Ù„Ø§Ø³Ù…ØŒ Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙØŒ ÙˆØ§Ù„ÙˆÙ„Ø§ÙŠØ©. Ø§Ù„Ø¯ÙØ¹ ÙƒÙŠ ØªÙˆØµÙ„ÙƒØŒ ÙˆØ§Ù„Ù…Ø¯Ø© 24-48 Ø³Ø§Ø¹Ø©.`,
+      fr: `Le Great-Ears G19S est à 14500 DA, livraison gratuite dans les 58 wilayas.`,
+      dz: `السومة 14500 دج، والتوصيل مجاني لقاع الولايات.`,
     },
     DELIVERY: {
-      fr: `La livraison est gratuite dans les 58 wilayas. Le dÃ©lai est gÃ©nÃ©ralement 24 Ã  48 heures aprÃ¨s confirmation. Le paiement se fait Ã  la livraison.`,
-      dz: `Ø§Ù„ØªÙˆØµÙŠÙ„ Ù…Ø¬Ø§Ù†ÙŠ Ù„ÙƒÙ„ 58 ÙˆÙ„Ø§ÙŠØ©. Ø§Ù„Ù…Ø¯Ø© ØºØ§Ù„Ø¨Ø§ Ù…Ù† 24 Ø­ØªÙ‰ 48 Ø³Ø§Ø¹Ø© Ø¨Ø¹Ø¯ Ø§Ù„ØªØ£ÙƒÙŠØ¯. Ø§Ù„Ø¯ÙØ¹ ÙŠÙƒÙˆÙ† Ø¹Ù†Ø¯ Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù….`,
+      fr: `Livraison gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures.`,
+      dz: `التوصيل مجاني لقاع الولايات. الكولي يوصلك في 24 حتى 48 ساعة.`,
     },
     EFFECTIVENESS: {
-      fr: `La personne entend comment: bien, moyen, ou trÃ¨s faible?`,
-      dz: `Ø§Ù„Ø´Ø®Øµ ÙŠØ³Ù…Ø¹ ÙƒÙŠÙØ§Ø´: Ù…Ù„ÙŠØ­ØŒ Ù…ØªÙˆØ³Ø·ØŒ ÙˆÙ„Ø§ Ù†Ø§Ù‚Øµ Ø¨Ø²Ø§ÙØŸ`,
+      fr: `L'audition est faible, moyenne, ou très faible?`,
+      dz: `السمع ناقص شوية، متوسط، ولا ناقص بزاف؟`,
     },
     PRODUCT: {
-      fr: `Great-Ears G19S, appareil auditif rechargeable qui se place dans l'oreille.\n\nAutonomie environ 20h, charge environ 2h, rÃ©duction du bruit, son propre, couleurs bleu, rouge ou beige.`,
-      dz: `Ø¬Ø±ÙŠØª Ø¥ÙŠØ±Ø² Ø¬ÙŠ 19 Ø¥Ø³ Ø³Ù…Ø§Ø¹Ø© Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø´Ø­Ù† ØªØ¯Ø®Ù„ Ø¯Ø§Ø®Ù„ Ø§Ù„ÙˆØ¯Ù†.\n\nØªØ®Ø¯Ù… Ø­ÙˆØ§Ù„ÙŠ 20 Ø³Ø§Ø¹Ø©ØŒ ØªØ´Ø­Ù† ÙÙŠ Ø­ÙˆØ§Ù„ÙŠ 2 Ø³Ø§Ø¹Ø§ØªØŒ ÙÙŠÙ‡Ø§ ØªÙ‚Ù„ÙŠÙ„ Ø§Ù„Ø¶ÙˆØ¶Ø§Ø¡ ÙˆØµÙˆØª ØµØ§ÙÙŠØŒ ÙˆØ§Ù„Ø£Ù„ÙˆØ§Ù† Ø£Ø²Ø±Ù‚ØŒ Ø£Ø­Ù…Ø±ØŒ Ø¨ÙŠØ¬.`,
+      fr: `Great-Ears G19S est rechargeable, petit, discret, et se place dans l'oreille.`,
+      dz: `جريت إيرز جي 19 إس قابلة للشحن، صغيرة، وتدخل داخل الودن ما تبانش بزاف.`,
     },
   };
 

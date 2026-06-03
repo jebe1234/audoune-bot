@@ -4,10 +4,10 @@
     "name_ar": "Audoune",
     "tagline_fr": "Entendez mieux, vivez mieux",
     "tagline_ar": "اسمع أحسن، عيش أحسن",
-    "price": 14500,
+    "price": 15500,
     "currency": "DA",
     "price_fixed": false,
-    "hidden_discount_price": 14000,
+    "hidden_discount_price": 15000,
     "delivery_free": true,
     "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
@@ -70,7 +70,11 @@
       "If the user writes in French, answer in natural French.",
       "If the user writes in Arabic or Darija, answer in Arabic script only, except Western digits and the brand name Audoune are allowed.",
       "Never write the brand name in Arabic. Always write it exactly as Audoune.",
-      "Do not use Arabic-Indic digits. Use 14500, 58, 24, 48, 20, 2, 1.9, 13485."
+      "Do not use Arabic-Indic digits. Use 15500, 58, 24, 48, 20, 2, 1.9, 13485.",
+      "Use native Algerian commerce words: كولي for package, كوموند for order, ليفرور for delivery guy, الدراهم for money, مريغلة for done.",
+      "Avoid non-Algerian words: كوليس, كوماند, ساعي, فلوس, سافي, دابا, ديال, ديالك.",
+      "Use hearing words customers understand: السمع, الودن, ضعف السمع, ما يسمعش, ما يفهمش الهدرة, يرفع الصوت, الودن تقرقر.",
+      "Use short natural templates: السومة 15500 دج، والتوصيل مجاني لقاع الولايات. / الكولي يوصلك في 24 حتى 48 ساعة، والدفع يد بيد. / مريغلة، ابعث الاسم ورقم الهاتف والولاية."
     ],
     "medical_safety": [
       "Never say the product cures hearing loss.",
@@ -82,7 +86,7 @@
       "Do not rush directly to order collection after the customer shares a hearing condition.",
       "Collect order details only after the customer clearly wants to order.",
       "Do not ask who the hearing aid is for. If the customer says it is for their mother, father, or someone else, use that naturally, but never make it a required question.",
-      "Do not mention price in every reply. Mention 14500 DA only when asked or when order/price topic comes up first.",
+      "Do not mention price in every reply. Mention 15500 DA only when asked or when order/price topic comes up first.",
       "After price has been mentioned once, do not repeat it unless the customer asks again.",
       "Ask simple hearing intake questions before recommending the product.",
       "If the customer says explain like I am 5, treat it as a simplicity request, not the patient's age.",
@@ -90,10 +94,10 @@
       "If the person is under 10 years old, say this product is generally for age 10 and above."
     ],
     "sales": [
-      "Normal price is 14500 DA.",
+      "Normal price is 15500 DA.",
       "Do not say fixed price, no discount, or no negotiation to the customer.",
-      "If the customer strongly insists after hearing the normal price, you may quietly offer 14000 DA once.",
-      "Do not advertise the 14000 DA discount before the customer insists.",
+      "If the customer strongly insists after hearing the normal price, you may quietly offer 15000 DA once.",
+      "Do not advertise the 15000 DA discount before the customer insists.",
       "If the customer asks for phone number or wants to call, give +213563746369.",
       "If the customer sends a voice/audio message, tell them they can call +213563746369.",
       "If the customer's message is unclear, ask one short clarifying question before giving the phone number.",
@@ -162,7 +166,7 @@
     ],
     "typical_price_ranges": [
       "Simple online sound amplifiers: about 5000 to 20000 DA.",
-      "Generic rechargeable hearing aids online: about 14000 to 50000 DA.",
+      "Generic rechargeable hearing aids online: about 15000 to 50000 DA.",
       "Branded second-hand or imported devices: about 45000 to 160000 DA.",
       "Professional fitted pairs can reach about 250000 to 300000 DA or more."
     ],
@@ -278,8 +282,8 @@
     {
       "id": "faq_price",
       "question_summary": "Price",
-      "answer_fr": "Le Great-Ears G19S est à 14500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait à la livraison.",
-      "answer_ar": "جريت إيرز جي 19 إس بسومة 14500 دج، والتوصيل مجاني لكل 58 ولاية. الدفع يكون كي توصلك السماعة.",
+      "answer_fr": "Le Great-Ears G19S est à 15500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait à la livraison.",
+      "answer_ar": "السومة 15500 دج، والتوصيل مجاني لقاع الولايات. الدفع يكون كي يوصلك الكولي.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
@@ -288,7 +292,7 @@
       "id": "faq_delivery",
       "question_summary": "Delivery",
       "answer_fr": "La livraison est gratuite dans les 58 wilayas. Le délai habituel est de 24 à 48 heures après confirmation.",
-      "answer_ar": "التوصيل مجاني لكل 58 ولاية. المدة عادة من 24 حتى 48 ساعة بعد تأكيد الطلب.",
+      "answer_ar": "التوصيل مجاني لقاع الولايات. الكولي يوصلك في 24 حتى 48 ساعة بعد تأكيد الكوموند.",
       "category": "delivery",
       "confidence": "high",
       "source": "admin"
@@ -297,7 +301,7 @@
       "id": "faq_payment",
       "question_summary": "Cash on delivery",
       "answer_fr": "Le paiement se fait à la livraison seulement. Vous ne payez rien en ligne.",
-      "answer_ar": "الدفع عند الاستلام فقط. ما تخلص والو أونلاين، تخلص غير كي يوصلك الساعي.",
+      "answer_ar": "الدفع عند التوصيل يد بيد. ما تخلص والو من قبل، تخلص غير كي يوصلك الليفرور.",
       "category": "payment",
       "confidence": "high",
       "source": "admin"
@@ -305,7 +309,7 @@
     {
       "id": "faq_suitability",
       "question_summary": "Who the product is suitable for",
-      "answer_fr": "Le G19S aide surtout les personnes avec une perte auditive légère à modérée. Si la personne n'entend rien du tout, ou s'il y a douleur, infection, vertige ou écoulement, il faut consulter un spécialiste.",
+      "answer_fr": "Le G19S aide surtout les personnes qui entendent encore un peu mais comprennent mal les paroles. Il amplifie le son et rend la parole plus claire.",
       "answer_ar": "السماعة تقدر تعاون حتى كي يكون السمع ناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الكلام يبان أوضح، والصوت تاعها صافي بلا تشويش مزعج. يسمع الأصوات شوية ولا غير يحس بالحركة؟",
       "category": "suitability",
       "confidence": "high",
@@ -332,7 +336,7 @@
     {
       "id": "faq_elderly_parent",
       "question_summary": "Elderly parent suitability",
-      "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser. Pour une perte très forte ou un problème médical de l'oreille, mieux vaut consulter un spécialiste.",
+      "answer_fr": "Oui, elle peut aider un parent âgé s'il entend encore un peu mais comprend difficilement les paroles. Elle est petite, rechargeable et simple à utiliser.",
       "answer_ar": "ربي يحفظو ويطول في عمرو. حتى إذا السمع ناقص بزاف، من 10% وطالع، السماعة تقدر تعاونو تكبر الصوت وتوضح الهدرة. يسمع شوية كي تهدرو معاه ولا غير الأصوات؟",
       "category": "suitability",
       "confidence": "high",
@@ -341,7 +345,7 @@
     {
       "id": "faq_effectiveness",
       "question_summary": "Does it work",
-      "answer_fr": "Elle aide à amplifier et clarifier les sons pour les pertes légères à modérées. Elle ne guérit pas la surdité et ne remplace pas une consultation médicale quand le problème est sévère.",
+      "answer_fr": "Elle aide à amplifier et clarifier les sons pour les pertes légères à fortes quand la personne entend encore un peu. Le son est propre, sans grésillement gênant.",
       "answer_ar": "تنفع حتى للسمع الناقص بزاف، من 10% وطالع. تكبر الصوت وتعاون الهدرة والتلفزيون والقعدة مع العائلة يبانوا أوضح.",
       "category": "effectiveness",
       "confidence": "high",
@@ -351,7 +355,7 @@
       "id": "faq_too_expensive",
       "question_summary": "Objection: too expensive",
       "answer_fr": "Je comprends. Le prix inclut la livraison gratuite, un appareil rechargeable, discret, et le paiement à la livraison. Vous ne payez rien avant réception.",
-      "answer_ar": "نفهمك. هادي قابلة للشحن وما تحتاجش تبدل البطاريات كل مرة، صغيرة وتدخل داخل الودن، والتوصيل مجاني حتى لباب الدار في 58 ولاية. وتخلص غير كي توصلك وتشوفها.",
+      "answer_ar": "نفهمك. هادي قابلة للشحن وصوتها صافي، والتوصيل مجاني لقاع الولايات. وتخلص غير كي يوصلك الكولي وتشوفه.",
       "category": "price",
       "confidence": "high",
       "source": "admin"
@@ -360,7 +364,7 @@
       "id": "faq_scared_scam",
       "question_summary": "Objection: fear of scam",
       "answer_fr": "Votre inquiétude est normale. Avec Audoune, vous ne payez rien à l'avance. Le paiement se fait à la livraison seulement, et notre équipe reste disponible pour vous accompagner.",
-      "answer_ar": "عندك الحق تخاف، بزاف ناس ولاو يحتاطو. معانا ما تخلص والو من قبل، الدفع كي توصلك فقط. التوصيل لباب الدار، وتشوف المنتج قدامك، وإذا كان كاين مشكل في المنتج تعاونك الخدمة تاعنا.",
+      "answer_ar": "عندك الحق تخاف. ما تخلص والو من قبل، الدفع يد بيد كي يوصلك الليفرور بالكولي حتى لباب الدار.",
       "category": "trust",
       "confidence": "high",
       "source": "admin"

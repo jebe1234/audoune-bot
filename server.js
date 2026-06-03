@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const { handleMessage, handlePostback, handleEchoMessage } = require('./bot/hamza');
-const { getMessengerStatus } = require('./bot/messenger');
+const { getMessengerStatus, captureMetaUsage } = require('./bot/messenger');
 
 const app = express();
 app.use(express.json());
@@ -165,23 +165,28 @@ app.get('/diag', async (req, res) => {
     status.GEMINI_TEST = 'FAIL ❌ ' + e.message.substring(0, 60);
   }
 
-  // Quick Facebook Send API test (typing indicator — no visible message)
+  // Quick Facebook token test without messaging a customer.
   try {
     const axios = require('axios');
-    await axios.post('https://graph.facebook.com/v19.0/me/messages',
-      { recipient: { id: '28069966095939197' }, sender_action: 'typing_on' },
-      { params: { access_token: process.env.PAGE_ACCESS_TOKEN } }
-    );
-    status.FACEBOOK_SEND_API = 'PASS ✅';
+    const response = await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
+      params: {
+        access_token: process.env.PAGE_ACCESS_TOKEN,
+        limit: 1,
+        fields: 'id,updated_time',
+      },
+      timeout: 15000,
+    });
+    captureMetaUsage(response.headers);
+    status.FACEBOOK_TOKEN = 'PASS ✅';
   } catch(e) {
-    status.FACEBOOK_SEND_API = 'FAIL ❌ ' + (e.response?.data?.error?.message || e.message).substring(0, 60);
+    status.FACEBOOK_TOKEN = 'FAIL ❌ ' + (e.response?.data?.error?.message || e.message).substring(0, 80);
   }
 
   res.json(status);
 });
 
 // One-time helper: reply to recent conversations that arrived while Send API was broken.
-// Call: /admin/backfill?token=VERIFY_TOKEN&hours=24&limit=25
+// Call: /admin/backfill?token=VERIFY_TOKEN&hours=24&limit=10&dryRun=1
 app.get('/admin/backfill', async (req, res) => {
   const token = req.query.token;
   const allowedToken = process.env.BACKFILL_TOKEN || process.env.VERIFY_TOKEN;
@@ -189,21 +194,37 @@ app.get('/admin/backfill', async (req, res) => {
 
   const axios = require('axios');
   const hours = Math.min(Math.max(parseInt(req.query.hours || '24', 10), 1), 24);
-  const limit = Math.min(Math.max(parseInt(req.query.limit || '25', 10), 1), 50);
+  const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 25);
+  const maxReplies = Math.min(Math.max(parseInt(req.query.maxReplies || '5', 10), 0), 10);
+  const replyDelayMs = Math.min(
+    Math.max(parseInt(req.query.delayMs || process.env.BACKFILL_REPLY_DELAY_MS || '20000', 10), 5000),
+    120000
+  );
+  const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
   const sinceMs = Date.now() - hours * 60 * 60 * 1000;
   const result = {
     checked: 0,
     replied: 0,
+    wouldReply: 0,
     skipped: 0,
+    dryRun,
+    maxReplies,
+    replyDelayMs,
     errors: [],
   };
 
-  try {
-    const me = await axios.get('https://graph.facebook.com/v19.0/me', {
-      params: { access_token: process.env.PAGE_ACCESS_TOKEN },
-    });
-    const pageId = String(me.data.id);
+  const isPageSender = (message) => {
+    const senderName = String(message?.from?.name || '').trim().toLowerCase();
+    const pageNames = [
+      process.env.PAGE_NAME,
+      process.env.BUSINESS_NAME,
+      'Audoune',
+    ].filter(Boolean).map((name) => String(name).trim().toLowerCase());
 
+    return pageNames.some((name) => senderName === name || senderName.includes(name));
+  };
+
+  try {
     const conversations = await axios.get('https://graph.facebook.com/v19.0/me/conversations', {
       params: {
         access_token: process.env.PAGE_ACCESS_TOKEN,
@@ -211,6 +232,7 @@ app.get('/admin/backfill', async (req, res) => {
         fields: 'id,updated_time,unread_count,participants,messages.limit(10){id,message,from,created_time,attachments}',
       },
     });
+    captureMetaUsage(conversations.headers);
 
     for (const conversation of conversations.data.data || []) {
       result.checked += 1;
@@ -221,24 +243,34 @@ app.get('/admin/backfill', async (req, res) => {
       }
 
       const messages = conversation.messages?.data || [];
-      const latestCustomerMessage = messages.find((msg) => String(msg.from?.id) !== pageId);
-      if (!latestCustomerMessage) {
+      const latestMessage = messages[0];
+      if (!latestMessage || isPageSender(latestMessage)) {
         result.skipped += 1;
         continue;
       }
 
-      const messageTime = new Date(latestCustomerMessage.created_time || 0).getTime();
+      const messageTime = new Date(latestMessage.created_time || 0).getTime();
       if (!messageTime || messageTime < sinceMs) {
         result.skipped += 1;
         continue;
       }
 
-      const senderId = String(latestCustomerMessage.from.id);
-      const text = (latestCustomerMessage.message || '').trim();
-      const attachments = latestCustomerMessage.attachments?.data || [];
+      const senderId = String(latestMessage.from.id);
+      const text = (latestMessage.message || '').trim();
+      const attachments = latestMessage.attachments?.data || [];
       const hasAudio = attachments.some((attachment) =>
         /audio/i.test(`${attachment.mime_type || ''} ${attachment.name || ''} ${attachment.type || ''}`)
       );
+
+      if (dryRun) {
+        result.wouldReply += 1;
+        continue;
+      }
+
+      if (result.replied >= maxReplies) {
+        result.skipped += 1;
+        continue;
+      }
 
       try {
         await handleMessage(senderId, {
@@ -246,6 +278,7 @@ app.get('/admin/backfill', async (req, res) => {
           attachments: !text && hasAudio ? [{ type: 'audio' }] : [],
         });
         result.replied += 1;
+        await new Promise((resolve) => setTimeout(resolve, replyDelayMs));
       } catch (err) {
         result.errors.push({
           conversationId: conversation.id,
