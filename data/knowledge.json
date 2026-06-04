@@ -4,10 +4,10 @@
     "name_ar": "Audoune",
     "tagline_fr": "Entendez mieux, vivez mieux",
     "tagline_ar": "اسمع أحسن، عيش أحسن",
-    "price": 15500,
+    "price": 12500,
     "currency": "DA",
     "price_fixed": false,
-    "hidden_discount_price": 15000,
+    "hidden_discount_price": 12000,
     "delivery_free": true,
     "delivery_wilayas": "58 wilayas of Algeria",
     "delivery_time": "24 to 48 hours",
@@ -70,11 +70,11 @@
       "If the user writes in French, answer in natural French.",
       "If the user writes in Arabic or Darija, answer in Arabic script only, except Western digits and the brand name Audoune are allowed.",
       "Never write the brand name in Arabic. Always write it exactly as Audoune.",
-      "Do not use Arabic-Indic digits. Use 15500, 58, 24, 48, 20, 2, 1.9, 13485.",
+      "Do not use Arabic-Indic digits. Use 12500, 58, 24, 48, 20, 2, 1.9, 13485.",
       "Use native Algerian commerce words: كولي for package, كوموند for order, ليفرور for delivery guy, الدراهم for money, مريغلة for done.",
       "Avoid non-Algerian words: كوليس, كوماند, ساعي, فلوس, سافي, دابا, ديال, ديالك.",
       "Use hearing words customers understand: السمع, الودن, ضعف السمع, ما يسمعش, ما يفهمش الهدرة, يرفع الصوت, الودن تقرقر.",
-      "Use short natural templates: السومة 15500 دج، والتوصيل مجاني لقاع الولايات. / الكولي يوصلك في 24 حتى 48 ساعة، والدفع يد بيد. / مريغلة، ابعث الاسم ورقم الهاتف والولاية."
+      "Use short natural templates: السومة 12500 دج، والتوصيل مجاني لقاع الولايات. / الكولي يوصلك في 24 حتى 48 ساعة، والدفع يد بيد. / مريغلة، ابعث الاسم ورقم الهاتف والولاية."
     ],
     "medical_safety": [
       "Never say the product cures hearing loss.",
@@ -86,7 +86,7 @@
       "Do not rush directly to order collection after the customer shares a hearing condition.",
       "Collect order details only after the customer clearly wants to order.",
       "Do not ask who the hearing aid is for. If the customer says it is for their mother, father, or someone else, use that naturally, but never make it a required question.",
-      "Do not mention price in every reply. Mention 15500 DA only when asked or when order/price topic comes up first.",
+      "Do not mention price in every reply. Mention 12500 DA only when asked or when order/price topic comes up first.",
       "After price has been mentioned once, do not repeat it unless the customer asks again.",
       "Ask simple hearing intake questions before recommending the product.",
       "If the customer says explain like I am 5, treat it as a simplicity request, not the patient's age.",
@@ -94,10 +94,10 @@
       "If the person is under 10 years old, say this product is generally for age 10 and above."
     ],
     "sales": [
-      "Normal price is 15500 DA.",
+      "Normal price is 12500 DA.",
       "Do not say fixed price, no discount, or no negotiation to the customer.",
-      "If the customer strongly insists after hearing the normal price, you may quietly offer 15000 DA once.",
-      "Do not advertise the 15000 DA discount before the customer insists.",
+      "If the customer strongly insists after hearing the normal price, you may quietly offer 12000 DA once.",
+      "Do not advertise the 12000 DA discount before the customer insists.",
       "If the customer asks for phone number or wants to call, give +213563746369.",
       "If the customer sends a voice/audio message, tell them they can call +213563746369.",
       "If the customer's message is unclear, ask one short clarifying question before giving the phone number.",
@@ -282,8 +282,8 @@
     {
       "id": "faq_price",
       "question_summary": "Price",
-      "answer_fr": "Le Great-Ears G19S est à 15500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait à la livraison.",
-      "answer_ar": "السومة 15500 دج، والتوصيل مجاني لقاع الولايات. الدفع يكون كي يوصلك الكولي.",
+      "answer_fr": "Le Great-Ears G19S est à 12500 DA, avec livraison gratuite dans les 58 wilayas. Le paiement se fait à la livraison.",
+      "answer_ar": "السومة 12500 دج، والتوصيل مجاني لقاع الولايات. الدفع يكون كي يوصلك الكولي.",
       "category": "price",
       "confidence": "high",
       "source": "admin"

@@ -325,8 +325,8 @@ function getPriceResponse(lang, session, text) {
     session.priceObjectionCount += 1;
     if (session.priceObjectionCount >= 2) {
       return lang === 'fr'
-        ? 'Je peux vous la faire à 14000 DA.'
-        : 'نقدر نديرهالك 14000 دج برك.';
+        ? 'Je peux vous la faire à 12000 DA.'
+        : 'نقدر نديرهالك 12000 دج برك.';
     }
     return lang === 'fr'
       ? 'Je comprends, mais elle est rechargeable, le son est propre, et la livraison est gratuite.'
@@ -335,8 +335,8 @@ function getPriceResponse(lang, session, text) {
 
   session.priceMentioned = true;
   return lang === 'fr'
-    ? 'Le prix est 14500 DA, livraison gratuite dans les 58 wilayas.'
-    : 'السومة 14500 دج، والتوصيل مجاني لقاع الولايات.';
+    ? 'Le prix est 12500 DA, livraison gratuite dans les 58 wilayas.'
+    : 'السومة 12500 دج، والتوصيل مجاني لقاع الولايات.';
 }
 
 function hasAudioAttachment(message) {
@@ -714,8 +714,8 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est à 14500 DA, livraison gratuite dans les 58 wilayas.`,
-      dz: `السومة 14500 دج، والتوصيل مجاني لقاع الولايات.`,
+      fr: `Le Great-Ears G19S est à 12500 DA, livraison gratuite dans les 58 wilayas.`,
+      dz: `السومة 12500 دج، والتوصيل مجاني لقاع الولايات.`,
     },
     DELIVERY: {
       fr: `Livraison gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures.`,
@@ -754,3 +754,4 @@ async function handleEchoMessage(customerId, message) {
 }
 
 module.exports = { handleMessage, handlePostback, handleEchoMessage };
+
