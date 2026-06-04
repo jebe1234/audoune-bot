@@ -323,11 +323,6 @@ function isPriceObjection(text) {
 function getPriceResponse(lang, session, text) {
   if (session.priceMentioned && isPriceObjection(text)) {
     session.priceObjectionCount += 1;
-    if (session.priceObjectionCount >= 2) {
-      return lang === 'fr'
-        ? 'Je peux vous la faire à 12000 DA.'
-        : 'نقدر نديرهالك 12000 دج برك.';
-    }
     return lang === 'fr'
       ? 'Je comprends, mais elle est rechargeable, le son est propre, et la livraison est gratuite.'
       : 'نفهمك، بصح راهي قابلة للشحن وصوتها صافي والتوصيل مجاني.';
