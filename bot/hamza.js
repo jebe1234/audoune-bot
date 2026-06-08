@@ -13,6 +13,7 @@ const { detectLanguage, getGreeting }         = require('./language');
 const knowledge                               = require('./knowledge');
 const { extractPhoneNumbers, inferLeadStatus, hasLeadDetails, appendLeadToSheet } = require('./sheets');
 const { isAdmin, notifyAdmin, notifyAdminOrder, handleAdminCommand } = require('./admin');
+const { findDeliveryRate, formatDeliveryReply } = require('../data/delivery');
 
 // â”€â”€â”€ In-memory user sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Key: Messenger PSID | Value: { language, history, firstName, isNew, orderBuffer }
@@ -316,6 +317,10 @@ function isPriceRequest(text) {
   return /(price|prix|combien|how much|السومة|السعر|الثمن|شحال|قداه|بشحال|بكاش|دراهم|دينار|دا|دج)/i.test(text);
 }
 
+function isDeliveryRequest(text) {
+  return /(delivery|livraison|livrer|وصل|يوصل|توصيل|التوصيل|ليفرور|كولي|stop desk|stopdesk|bureau|desk|ستوب|ديسك|للدار|لدار)/i.test(text);
+}
+
 function isPriceObjection(text) {
   return /(غالي|بزاف|cher|trop|expensive|ما قدرتش|نقص|ديرلي|remise|discount|خصم)/i.test(text);
 }
@@ -324,14 +329,14 @@ function getPriceResponse(lang, session, text) {
   if (session.priceMentioned && isPriceObjection(text)) {
     session.priceObjectionCount += 1;
     return lang === 'fr'
-      ? 'Je comprends, mais elle est rechargeable, le son est propre, et la livraison est gratuite.'
-      : 'نفهمك، بصح راهي قابلة للشحن وصوتها صافي والتوصيل مجاني.';
+      ? 'Je comprends, mais elle est rechargeable, le son est propre, et le paiement se fait à la livraison.'
+      : 'نفهمك، بصح راهي قابلة للشحن وصوتها صافي والدفع كي يوصلك الكولي.';
   }
 
   session.priceMentioned = true;
   return lang === 'fr'
-    ? 'Le prix est 12500 DA, livraison gratuite dans les 58 wilayas.'
-    : 'السومة 12500 دج، والتوصيل مجاني لقاع الولايات.';
+    ? 'Le prix est 8500 DA. La livraison dépend de la wilaya.'
+    : 'السومة 8500 دج. التوصيل حسب الولاية.';
 }
 
 function hasAudioAttachment(message) {
@@ -574,6 +579,18 @@ async function processMessage(senderId, message) {
     return;
   }
 
+  if (isDeliveryRequest(text)) {
+    const lang = session.language || detectLanguage(text);
+    const msg = formatDeliveryReply(findDeliveryRate(text), lang);
+    await sendTypingOn(senderId);
+    await delay(500);
+    await sendTypingOff(senderId);
+    await sendText(senderId, msg);
+    addToHistory(session, 'user', text);
+    addToHistory(session, 'assistant', msg);
+    return;
+  }
+
   if (isPriceRequest(text) || (session.priceMentioned && isPriceObjection(text))) {
     const lang = session.language || detectLanguage(text);
     const msg = getPriceResponse(lang, session, text);
@@ -709,12 +726,12 @@ async function handlePostback(senderId, postback) {
 
   const RESPONSES = {
     PRICE_ORDER: {
-      fr: `Le Great-Ears G19S est à 12500 DA, livraison gratuite dans les 58 wilayas.`,
-      dz: `السومة 12500 دج، والتوصيل مجاني لقاع الولايات.`,
+      fr: `Le Great-Ears G19S est à 8500 DA. La livraison dépend de la wilaya.`,
+      dz: `السومة 8500 دج. التوصيل حسب الولاية.`,
     },
     DELIVERY: {
-      fr: `Livraison gratuite dans les 58 wilayas. Le délai est généralement 24 à 48 heures.`,
-      dz: `التوصيل مجاني لقاع الولايات. الكولي يوصلك في 24 حتى 48 ساعة.`,
+      fr: `La livraison dépend de la wilaya. Donnez-moi votre wilaya.`,
+      dz: `التوصيل حسب الولاية. ابعثلي الولاية تاعك.`,
     },
     EFFECTIVENESS: {
       fr: `L'audition est faible, moyenne, ou très faible?`,

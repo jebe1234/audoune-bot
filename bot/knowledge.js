@@ -1,6 +1,7 @@
 const fs   = require('fs');
 const path  = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { deliverySummaryLines } = require('../data/delivery');
 
 const KB_PATH = path.join(__dirname, '../data/knowledge.json');
 
@@ -27,10 +28,13 @@ function getContext() {
 === AUDOUNE BUSINESS INFO ===
 - Company: ${b.name} (${b.name_ar})
 - Product: ${p.model} — ${p.style}
-- Price: ${b.price} DA (livraison incluse / شاملة التوصيل)
-- Delivery: FREE to all ${b.delivery_wilayas} / مجانية لكل الولايات
+- Price: ${b.price} DA (product only; delivery is not included)
+- Delivery: paid by wilaya and mode. Ask for the wilaya if the customer asks delivery.
 - Delivery time: ${b.delivery_time}
 - Effectiveness: ${b.effectiveness_range}
+
+=== DELIVERY PRICES ===
+${deliverySummaryLines().join('\n')}
 
 === PRODUCT KEY FEATURES ===
 ${(p.key_features || []).join('\n')}
